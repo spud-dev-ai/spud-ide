@@ -85,9 +85,6 @@ function getExtensionDownloadStream(extension) {
     if (extension.vsix) {
         input = ext.fromVsix(path_1.default.join(root, extension.vsix), extension);
     }
-    else if (productjson.extensionsGallery?.serviceUrl) {
-        input = ext.fromMarketplace(productjson.extensionsGallery.serviceUrl, extension);
-    }
     else {
         input = ext.fromGithub(extension);
     }

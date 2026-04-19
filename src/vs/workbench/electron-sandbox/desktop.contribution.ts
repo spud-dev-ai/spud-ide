@@ -299,7 +299,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from '../common/contri
 			'telemetry.enableCrashReporter': {
 				'type': 'boolean',
 				'description': localize('telemetry.enableCrashReporting', "Enable crash reports to be collected. This helps us improve stability. \nThis option requires restart to take effect."),
-				'default': true,
+				'default': false,
 				'tags': ['usesOnlineServices', 'telemetry'],
 				'markdownDeprecationMessage': localize('enableCrashReporterDeprecated', "If this setting is false, no telemetry will be sent regardless of the new setting's value. Deprecated due to being combined into the {0} setting.", `\`#${TELEMETRY_SETTING_ID}#\``),
 			}
@@ -359,7 +359,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from '../common/contri
 		id: argvDefinitionFileSchemaId,
 		allowComments: true,
 		allowTrailingCommas: true,
-		description: 'VSCode static command line definition file',
+		description: 'Spud static command line definition file',
 		type: 'object',
 		additionalProperties: false,
 		properties: {
@@ -404,11 +404,11 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from '../common/contri
 			},
 			'disable-chromium-sandbox': {
 				type: 'boolean',
-				description: localize('argv.disableChromiumSandbox', "Disables the Chromium sandbox. This is useful when running VS Code as elevated on Linux and running under Applocker on Windows.")
+				description: localize('argv.disableChromiumSandbox', "Disables the Chromium sandbox. This is useful when running Spud as elevated on Linux and running under Applocker on Windows.")
 			},
 			'use-inmemory-secretstorage': {
 				type: 'boolean',
-				description: localize('argv.useInMemorySecretStorage', "Ensures that an in-memory store will be used for secret storage instead of using the OS's credential store. This is often used when running VS Code extension tests or when you're experiencing difficulties with the credential store.")
+				description: localize('argv.useInMemorySecretStorage', "Ensures that an in-memory store will be used for secret storage instead of using the OS's credential store. This is often used when running Spud extension tests or when you're experiencing difficulties with the credential store.")
 			}
 		}
 	};

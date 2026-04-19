@@ -28,6 +28,8 @@ import { executeCommand, executeCommandTimeout, IFigExecuteExternals } from './f
 import { createTimeoutPromise } from './helpers/promise';
 import codeTunnelCompletionSpec from './completions/code-tunnel';
 import codeTunnelInsidersCompletionSpec from './completions/code-tunnel-insiders';
+import codiumCompletionSpec from './completions/codium';
+import codiumInsidersCompletionSpec from './completions/codium-insiders';
 
 export const enum TerminalShellType {
 	Bash = 'bash',
@@ -48,6 +50,8 @@ export const availableSpecs: Fig.Spec[] = [
 	codeTunnelCompletionSpec,
 	codeTunnelInsidersCompletionSpec,
 	npxCompletionSpec,
+	codiumInsidersCompletionSpec,
+	codiumCompletionSpec,
 	setLocationSpec,
 ];
 for (const spec of upstreamSpecs) {

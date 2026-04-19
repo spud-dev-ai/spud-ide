@@ -286,7 +286,7 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 
 		let productJsonContents;
 		const productJsonStream = gulp.src(['product.json'], { base: '.' })
-			.pipe(json({ commit, date: readISODate('out-build'), checksums, version }))
+			.pipe(json({ commit, date: readISODate('out-build'), checksums, version, serverDownloadUrlTemplate: 'https://github.com/spud-dev-ai/spud-ide/releases/download/1.99.3/spud-reh-${os}-${arch}-1.99.3.tar.gz' }))
 			.pipe(es.through(function (file) {
 				productJsonContents = file.contents.toString();
 				this.emit('data', file);
@@ -374,7 +374,7 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 		} else if (platform === 'darwin') {
 			const shortcut = gulp.src('resources/darwin/bin/code.sh')
 				.pipe(replace('@@APPNAME@@', product.applicationName))
-				.pipe(rename('bin/code'));
+				.pipe(rename('bin/' + product.applicationName));
 			const policyDest = gulp.src('.build/policies/darwin/**', { base: '.build/policies/darwin' })
 				.pipe(rename(f => f.dirname = `policies/${f.dirname}`));
 			all = es.merge(all, shortcut, policyDest);

@@ -13,10 +13,12 @@ import { IEnvironmentMainService } from '../../environment/electron-main/environ
 import { ILifecycleMainService, IRelaunchHandler, IRelaunchOptions } from '../../lifecycle/electron-main/lifecycleMainService.js';
 import { ILogService } from '../../log/common/log.js';
 import { IProductService } from '../../product/common/productService.js';
-import { IRequestService } from '../../request/common/request.js';
+import { IRequestService, asJson } from '../../request/common/request.js';
 import { ITelemetryService } from '../../telemetry/common/telemetry.js';
 import { IUpdate, State, StateType, UpdateType } from '../common/update.js';
 import { AbstractUpdateService, createUpdateURL, UpdateErrorClassification } from './abstractUpdateService.js';
+import { CancellationToken } from '../../../base/common/cancellation.js';
+import * as semver from 'semver';
 
 export class DarwinUpdateService extends AbstractUpdateService implements IRelaunchHandler {
 
@@ -74,13 +76,7 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
 	}
 
 	protected buildUpdateFeedUrl(quality: string): string | undefined {
-		let assetID: string;
-		if (!this.productService.darwinUniversalAssetId) {
-			assetID = process.arch === 'x64' ? 'darwin' : 'darwin-arm64';
-		} else {
-			assetID = this.productService.darwinUniversalAssetId;
-		}
-		const url = createUpdateURL(assetID, quality, this.productService);
+		const url = createUpdateURL(this.productService, quality, process.platform, process.arch);
 		try {
 			electron.autoUpdater.setFeedURL({ url });
 		} catch (e) {
@@ -92,8 +88,33 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
 	}
 
 	protected doCheckForUpdates(context: any): void {
+		if (!this.url) {
+			return;
+		}
+
 		this.setState(State.CheckingForUpdates(context));
-		electron.autoUpdater.checkForUpdates();
+
+		this.requestService.request({ url: this.url }, CancellationToken.None)
+			.then<IUpdate | null>(asJson)
+			.then(update => {
+				if (!update || !update.url || !update.version || !update.productVersion) {
+					this.setState(State.Idle(UpdateType.Setup));
+
+					return Promise.resolve(null);
+				}
+
+				const fetchedVersion = /\d+\.\d+\.\d+\.\d+/.test(update.productVersion) ? update.productVersion.replace(/(\d+\.\d+\.\d+)\.\d+(\-\w+)?/, '$1$2') : update.productVersion.replace(/(\d+\.\d+\.)0+(\d+)(\-\w+)?/, '$1$2$3')
+				const currentVersion = this.productService.version.replace(/(\d+\.\d+\.)0+(\d+)(\-\w+)?/, '$1$2$3')
+
+				if(semver.compareBuild(currentVersion, fetchedVersion) >= 0) {
+					this.setState(State.Idle(UpdateType.Setup));
+				}
+				else {
+					electron.autoUpdater.checkForUpdates();
+				}
+
+				return Promise.resolve(null);
+			})
 	}
 
 	private onUpdateAvailable(): void {
@@ -113,8 +134,8 @@ export class DarwinUpdateService extends AbstractUpdateService implements IRelau
 
 		type UpdateDownloadedClassification = {
 			owner: 'joaomoreno';
-			newVersion: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The version number of the new VS Code that has been downloaded.' };
-			comment: 'This is used to know how often VS Code has successfully downloaded the update.';
+			newVersion: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The version number of the new Spud that has been downloaded.' };
+			comment: 'This is used to know how often Spud has successfully downloaded the update.';
 		};
 		this.telemetryService.publicLog2<{ newVersion: String }, UpdateDownloadedClassification>('update:downloaded', { newVersion: update.version });
 

@@ -319,7 +319,7 @@ function packageTask(type, platform, arch, sourceFolderName, destinationFolderNa
 
 		let productJsonContents;
 		const productJsonStream = gulp.src(['product.json'], { base: '.' })
-			.pipe(json({ commit, date: readISODate('out-build'), version }))
+			.pipe(json({ commit, date: readISODate('out-build'), version, serverDownloadUrlTemplate: 'https://github.com/spud-dev-ai/spud-ide/releases/download/1.99.3/spud-reh-${os}-${arch}-1.99.3.tar.gz' }))
 			.pipe(es.through(function (file) {
 				productJsonContents = file.contents.toString();
 				this.emit('data', file);

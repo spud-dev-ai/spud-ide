@@ -58,10 +58,13 @@ async function main(buildDir?: string): Promise<void> {
 		...defaultOpts,
 		// TODO(deepak1556): Incorrectly declared type in electron-osx-sign
 		ignore: (filePath: string) => {
-			return filePath.includes(gpuHelperAppName) ||
-				filePath.includes(rendererHelperAppName) ||
-				filePath.includes(pluginHelperAppName);
+			const ext = path.extname(filePath);
+            return filePath.includes(gpuHelperAppName) ||
+                filePath.includes(rendererHelperAppName) ||
+                filePath.includes(pluginHelperAppName) ||
+				ext == '.asar' || ext == '.dat' || ext == '.gif' || ext == '.icns' || ext == '.ico' || ext == '.json' || ext == '.mp3' || ext == '.nib' || ext == '.pak' || ext == '.png' || ext == '.scpt' || ext == '.ttf' || ext == '.wasm' || ext == '.woff' || ext == '.woff2';
 		}
+
 	};
 
 	const gpuHelperOpts: codesign.SignOptions = {

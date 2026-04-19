@@ -8,7 +8,7 @@ import { ProviderName, SettingName, displayInfoOfSettingName, providerNames, Voi
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js'
 import { VoidButtonBgDarken, VoidCustomDropdownBox, VoidInputBox2, VoidSimpleInputBox, VoidSwitch } from '../util/inputs.js'
 import { useAccessor, useIsDark, useIsOptedOut, useRefreshModelListener, useRefreshModelState, useSettingsState } from '../util/services.js'
-import { X, RefreshCw, Loader2, Check, Asterisk, Plus } from 'lucide-react'
+import { X, RefreshCw, Loader2, Check, Asterisk, Plus, Sun, Moon } from 'lucide-react'
 import { URI } from '../../../../../../../base/common/uri.js'
 import { ModelDropdown } from './ModelDropdown.js'
 import { ChatMarkdownRender } from '../markdown/ChatMarkdownRender.js'
@@ -33,6 +33,53 @@ type Tab =
 	| 'general'
 	| 'all';
 
+
+const SPUD_LIGHT_THEME_ID = 'Spud Paper'
+const SPUD_DARK_THEME_ID = 'Spud Paper Dark'
+
+const AppearanceToggle = () => {
+	const accessor = useAccessor()
+	const configurationService = accessor.get('IConfigurationService')
+	const metricsService = accessor.get('IMetricsService')
+	const isDark = useIsDark()
+
+	const setTheme = (mode: 'light' | 'dark') => {
+		const id = mode === 'dark' ? SPUD_DARK_THEME_ID : SPUD_LIGHT_THEME_ID
+		configurationService.updateValue('workbench.colorTheme', id)
+		configurationService.updateValue('workbench.preferredLightColorTheme', SPUD_LIGHT_THEME_ID)
+		configurationService.updateValue('workbench.preferredDarkColorTheme', SPUD_DARK_THEME_ID)
+		metricsService.capture('Set appearance', { mode })
+	}
+
+	const baseBtn = 'flex items-center gap-2 px-4 py-1.5 text-sm border border-void-border-1 transition-colors'
+	const activeCls = 'bg-void-bg-3 text-void-fg-1'
+	const inactiveCls = 'bg-void-bg-1 text-void-fg-3 hover:bg-void-bg-2'
+
+	return (
+		<div className='inline-flex rounded-md overflow-hidden' role='radiogroup' aria-label='Appearance'>
+			<button
+				type='button'
+				role='radio'
+				aria-checked={!isDark}
+				className={`${baseBtn} rounded-l-md ${!isDark ? activeCls : inactiveCls}`}
+				onClick={() => setTheme('light')}
+			>
+				<Sun className='size-4' />
+				<span>Light</span>
+			</button>
+			<button
+				type='button'
+				role='radio'
+				aria-checked={isDark}
+				className={`${baseBtn} rounded-r-md border-l-0 ${isDark ? activeCls : inactiveCls}`}
+				onClick={() => setTheme('dark')}
+			>
+				<Moon className='size-4' />
+				<span>Dark</span>
+			</button>
+		</div>
+	)
+}
 
 const ButtonLeftTextRightOption = ({ text, leftButton }: { text: string, leftButton?: React.ReactNode }) => {
 
@@ -1443,10 +1490,20 @@ export const Settings = () => {
 
 
 
+								{/* Appearance section — Spud Paper only, user picks light / dark */}
+								<div>
+									<h2 className={`text-3xl mb-2`}>Appearance</h2>
+									<h4 className={`text-void-fg-3 mb-4`}>{`Spud ships with a single design theme — Paper+Earth. Choose between its light and dark variants.`}</h4>
+
+									<ErrorBoundary>
+										<AppearanceToggle />
+									</ErrorBoundary>
+								</div>
+
 								{/* Built-in Settings section */}
 								<div>
 									<h2 className={`text-3xl mb-2`}>Built-in Settings</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>{`IDE settings, keyboard settings, and theme customization.`}</h4>
+									<h4 className={`text-void-fg-3 mb-4`}>{`IDE settings and keyboard settings.`}</h4>
 
 									<ErrorBoundary>
 										<div className='flex flex-col gap-2 justify-center max-w-48 w-full'>
@@ -1455,9 +1512,6 @@ export const Settings = () => {
 											</VoidButtonBgDarken>
 											<VoidButtonBgDarken className='px-4 py-1' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
 												Keyboard Settings
-											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-1' onClick={() => { commandService.executeCommand('workbench.action.selectTheme') }}>
-												Theme Settings
 											</VoidButtonBgDarken>
 											<VoidButtonBgDarken className='px-4 py-1' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
 												Open Logs

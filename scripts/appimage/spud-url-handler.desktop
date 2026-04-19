@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Spud - URL Handler
+Comment=Agentic AI IDE built for India.
+GenericName=Text Editor
+Exec=spud --open-url %U
+Icon=spud
+Type=Application
+NoDisplay=true
+StartupNotify=true
+Categories=Utility;TextEditor;Development;IDE;
+MimeType=x-scheme-handler/spud;
+Keywords=spud;

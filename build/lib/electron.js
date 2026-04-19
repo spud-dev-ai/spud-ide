@@ -1,6 +1,6 @@
 "use strict";
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Copyright (c) Spud. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -122,8 +122,8 @@ exports.config = {
     version: electronVersion,
     tag: product.electronRepository ? `v${electronVersion}-${msBuildId}` : undefined,
     productAppName: product.nameLong,
-    companyName: 'Microsoft Corporation',
-    copyright: 'Copyright (C) 2024 Microsoft. All rights reserved',
+    companyName: 'Spud',
+    copyright: 'Copyright (C) 2024 Spud. All rights reserved',
     darwinIcon: 'resources/darwin/code.icns',
     darwinBundleIdentifier: product.darwinBundleIdentifier,
     darwinApplicationCategoryType: 'public.app-category.developer-tools',

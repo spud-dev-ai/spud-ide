@@ -3,7 +3,7 @@
   "version": "1.99.3",
   "distro": "21c8d8ea1e46d97c5639a7cabda6c0e063cc8dd5",
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "Spud"
   },
   "license": "MIT",
   "main": "./out/main.js",
@@ -107,7 +107,7 @@
     "@types/semver": "^7.5.8",
     "@vscode/deviceid": "^0.1.1",
     "@vscode/iconv-lite-umd": "0.7.0",
-    "@vscode/policy-watcher": "^1.3.0",
+    "@vscodium/policy-watcher": "^1.3.0-2503300035",
     "@vscode/proxy-agent": "^0.32.0",
     "@vscode/ripgrep": "^1.15.11",
     "@vscode/spdlog": "^0.15.0",

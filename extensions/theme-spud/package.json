@@ -1,0 +1,57 @@
+{
+  "name": "theme-spud",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "1.1.0",
+  "publisher": "spud",
+  "license": "MIT",
+  "engines": {
+    "vscode": "*"
+  },
+  "categories": ["Themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "Spud Paper",
+        "label": "%spudPaperLabel%",
+        "uiTheme": "vs",
+        "path": "./themes/spud-paper-color-theme.json"
+      },
+      {
+        "id": "Spud Paper Dark",
+        "label": "%spudPaperDarkLabel%",
+        "uiTheme": "vs-dark",
+        "path": "./themes/spud-paper-dark-color-theme.json"
+      }
+    ],
+    "configurationDefaults": {
+      "workbench.colorTheme": "Spud Paper",
+      "workbench.preferredLightColorTheme": "Spud Paper",
+      "workbench.preferredDarkColorTheme": "Spud Paper Dark",
+      "workbench.preferredHighContrastColorTheme": "Spud Paper Dark",
+      "workbench.preferredHighContrastLightColorTheme": "Spud Paper",
+      "workbench.activityBar.location": "top",
+      "workbench.tree.indent": 18,
+      "workbench.tree.renderIndentGuides": "always",
+      "workbench.list.smoothScrolling": true,
+      "editor.cursorBlinking": "smooth",
+      "editor.cursorSmoothCaretAnimation": "on",
+      "editor.renderLineHighlight": "all",
+      "editor.bracketPairColorization.enabled": true,
+      "editor.guides.bracketPairs": "active",
+      "editor.guides.indentation": true,
+      "editor.smoothScrolling": true,
+      "editor.fontLigatures": true,
+      "window.titleBarStyle": "custom",
+      "window.customTitleBarVisibility": "auto",
+      "terminal.integrated.smoothScrolling": true,
+      "breadcrumbs.enabled": true,
+      "workbench.editor.showTabs": "multiple",
+      "workbench.editor.tabActionLocation": "right"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spud-dev-ai/spud-ide.git"
+  }
+}

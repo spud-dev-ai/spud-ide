@@ -105,7 +105,7 @@ abstract class BasePolicy implements Policy {
 
 	renderADMX(regKey: string) {
 		return [
-			`<policy name="${this.name}" class="Both" displayName="$(string.${this.name})" explainText="$(string.${this.name}_${this.description.nlsKey.replace(/\./g, '_')})" key="Software\\Policies\\Microsoft\\${regKey}" presentation="$(presentation.${this.name})">`,
+			`<policy name="${this.name}" class="Both" displayName="$(string.${this.name})" explainText="$(string.${this.name}_${this.description.nlsKey.replace(/\./g, '_')})" key="Software\\Policies\\spud-dev-ai\\${regKey}" presentation="$(presentation.${this.name})">`,
 			`	<parentCategory ref="${this.category.name.nlsKey}" />`,
 			`	<supportedOn ref="Supported_${this.minimumVersion.replace(/\./g, '_')}" />`,
 			`	<elements>`,
@@ -701,7 +701,7 @@ function renderADMX(regKey: string, versions: string[], categories: Category[], 
 	return `<?xml version="1.0" encoding="utf-8"?>
 <policyDefinitions revision="1.1" schemaVersion="1.0">
 	<policyNamespaces>
-		<target prefix="${regKey}" namespace="Microsoft.Policies.${regKey}" />
+		<target prefix="${regKey}" namespace="spud-dev-ai.Policies.${regKey}" />
 	</policyNamespaces>
 	<resources minRequiredRevision="1.0" />
 	<supportedOn>

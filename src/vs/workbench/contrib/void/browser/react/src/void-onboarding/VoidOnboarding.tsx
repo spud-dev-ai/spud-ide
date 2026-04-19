@@ -627,7 +627,7 @@ const VoidOnboardingContent = () => {
 
 			content={
 				<div>
-					<div className="text-5xl font-light text-center">Settings and Themes</div>
+					<div className="text-5xl font-light text-center">Settings</div>
 
 					<div className="mt-8 text-center flex flex-col items-center gap-4 w-full max-w-md mx-auto">
 						<h4 className="text-void-fg-3 mb-4">Transfer your settings from an existing editor?</h4>
