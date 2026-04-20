@@ -292,6 +292,8 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 			
 			// add autoAcceptLLMChanges feature
 			if (readS.globalSettings.autoAcceptLLMChanges === undefined) readS.globalSettings.autoAcceptLLMChanges = false;
+
+			if (readS.globalSettings.enhanceBuiltinDarkChrome === undefined) readS.globalSettings.enhanceBuiltinDarkChrome = true;
 		}
 		catch (e) {
 			readS = defaultState()
@@ -329,6 +331,11 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 				if (providerName === 'openAICompatible' && !readS.settingsOfProvider[providerName].headersJSON) {
 					readS.settingsOfProvider[providerName].headersJSON = '{}'
 				}
+			}
+
+			readS.globalSettings = {
+				...deepClone(defaultGlobalSettings),
+				...readS.globalSettings,
 			}
 		}
 

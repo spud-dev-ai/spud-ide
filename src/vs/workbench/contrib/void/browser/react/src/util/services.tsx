@@ -54,6 +54,8 @@ import { IExtensionManagementService } from '../../../../../../../platform/exten
 import { IMCPService } from '../../../../common/mcpService.js';
 import { IStorageService, StorageScope } from '../../../../../../../platform/storage/common/storage.js'
 import { OPT_OUT_KEY } from '../../../../common/storageKeys.js'
+import { ILifecycleService, LifecyclePhase } from '../../../../../../services/lifecycle/common/lifecycle.js'
+import { IExtensionService } from '../../../../../../services/extensions/common/extensions.js'
 
 
 // normally to do this you'd use a useEffect that calls .onDidChangeState(), but useEffect mounts too late and misses initial state changes
@@ -74,7 +76,8 @@ let refreshModelState: RefreshModelStateOfProvider
 const refreshModelStateListeners: Set<(s: RefreshModelStateOfProvider) => void> = new Set()
 const refreshModelProviderListeners: Set<(p: RefreshableProviderName, s: RefreshModelStateOfProvider) => void> = new Set()
 
-let colorThemeState: ColorScheme
+/** Set in `_registerServices` before any React root renders; default avoids undefined on first read. */
+let colorThemeState: ColorScheme = ColorScheme.LIGHT
 const colorThemeStateListeners: Set<(s: ColorScheme) => void> = new Set()
 
 const ctrlKZoneStreamingStateListeners: Set<(diffareaid: number, s: boolean) => void> = new Set()
@@ -229,6 +232,8 @@ const getReactAccessor = (accessor: ServicesAccessor) => {
 		IMCPService: accessor.get(IMCPService),
 
 		IStorageService: accessor.get(IStorageService),
+		ILifecycleService: accessor.get(ILifecycleService),
+		IExtensionService: accessor.get(IExtensionService),
 
 	} as const
 	return reactAccessor
@@ -403,6 +408,55 @@ export const useMCPServiceState = () => {
 	return s
 }
 
+
+
+/**
+ * `true` once all Spud-relevant startup signals have resolved:
+ *   - workbench lifecycle has reached `Restored`
+ *   - extensions have registered
+ *   - Void settings state has hydrated
+ *
+ * Always starts `false` on mount (even if some signals already resolved) and
+ * is held for a minimum visible duration (`MIN_LOADING_MS`). Without this, a
+ * warm reload would race the React mount and the loading view would never
+ * paint, since the sidebar is lazy-mounted well after `Restored`.
+ */
+const MIN_LOADING_MS = 450
+
+export const useIsWorkspaceReady = () => {
+	const accessor = useAccessor()
+	const lifecycleService = accessor.get('ILifecycleService')
+	const extensionService = accessor.get('IExtensionService')
+	const voidSettingsService = accessor.get('IVoidSettingsService')
+
+	const [ready, setReady] = useState(false)
+
+	useEffect(() => {
+		let cancelled = false
+		const start = Date.now()
+
+		const waitLifecycle = lifecycleService.phase >= LifecyclePhase.Restored
+			? Promise.resolve()
+			: lifecycleService.when(LifecyclePhase.Restored)
+
+		Promise.all([
+			waitLifecycle,
+			extensionService.whenInstalledExtensionsRegistered().catch(() => { /* ignore */ }),
+			voidSettingsService.waitForInitState.catch(() => { /* ignore */ }),
+		]).then(() => {
+			if (cancelled) return
+			const elapsed = Date.now() - start
+			const remaining = Math.max(0, MIN_LOADING_MS - elapsed)
+			setTimeout(() => {
+				if (!cancelled) setReady(true)
+			}, remaining)
+		})
+
+		return () => { cancelled = true }
+	}, [lifecycleService, extensionService, voidSettingsService])
+
+	return ready
+}
 
 
 export const useIsOptedOut = () => {

@@ -42,10 +42,24 @@ export class PartsSplash {
 		@IEditorGroupsService editorGroupsService: IEditorGroupsService,
 		@ILifecycleService lifecycleService: ILifecycleService,
 	) {
-		Event.once(_layoutService.onDidLayoutMainContainer)(() => {
-			this._removePartsSplash();
-			perf.mark('code/didRemovePartsSplash');
-		}, undefined, this._disposables);
+		// Spud: keep the splash up until BOTH the main container has laid out
+		// AND the workbench lifecycle has reached `Restored`. This ensures any
+		// Spud-specific chrome contributions (body classes for enhanced dark
+		// mode, void.css overrides, etc.) have painted at least once before
+		// the splash fades, so users never see the stock VS Code chrome flash
+		// through. A small tail delay (120ms) gives CSS one more frame to
+		// settle — feels instant, but guarantees no sub-frame glitch.
+		const layoutReady = new Promise<void>(resolve => {
+			const d = Event.once(_layoutService.onDidLayoutMainContainer)(() => resolve());
+			this._disposables.add(d);
+		});
+		const restoreReady = lifecycleService.when(LifecyclePhase.Restored);
+		Promise.all([layoutReady, restoreReady]).then(() => {
+			setTimeout(() => {
+				this._removePartsSplash();
+				perf.mark('code/didRemovePartsSplash');
+			}, 120);
+		});
 
 		const lastIdleSchedule = this._disposables.add(new MutableDisposable());
 		const savePartsSplashSoon = () => {
@@ -116,5 +130,16 @@ export class PartsSplash {
 		// remove initial colors
 		const defaultStyles = mainWindow.document.head.getElementsByClassName('initialShellColors');
 		defaultStyles[0]?.remove();
+
+		// Spud-branded splash (injected into workbench.html). Fades out on top of
+		// the existing parts splash removal, then is detached from the DOM.
+		const spudSplash = mainWindow.document.getElementById('spud-splash');
+		if (spudSplash) {
+			spudSplash.classList.add('spud-splash--hide');
+			const cleanup = () => { spudSplash.remove(); };
+			spudSplash.addEventListener('transitionend', cleanup, { once: true });
+			// Safety: ensure removal even if the transitionend event is missed.
+			setTimeout(cleanup, 800);
+		}
 	}
 }

@@ -71,6 +71,20 @@
 			}
 		}
 
+		// Spud: flip `spud-dark` / `spud-enhance-dark` on <html> and <body> based
+		// on the REAL persisted baseTheme (vs-dark / hc-black vs. vs / hc-light)
+		// BEFORE we paint the shell colors. This replaces the inline-script's
+		// prefers-color-scheme guess in workbench.html with the actual theme the
+		// user had last time, eliminating any flash of stock VS Code chrome for
+		// users who run e.g. OS-dark + Light theme.
+		const isDarkBaseTheme = baseTheme === 'vs-dark' || baseTheme === 'hc-black';
+		document.documentElement.classList.toggle('spud-dark', isDarkBaseTheme);
+		document.documentElement.classList.toggle('spud-enhance-dark', isDarkBaseTheme);
+		if (document.body) {
+			document.body.classList.toggle('spud-dark', isDarkBaseTheme);
+			document.body.classList.toggle('spud-enhance-dark', isDarkBaseTheme);
+		}
+
 		const style = document.createElement('style');
 		style.className = 'initialShellColors';
 		window.document.head.appendChild(style);

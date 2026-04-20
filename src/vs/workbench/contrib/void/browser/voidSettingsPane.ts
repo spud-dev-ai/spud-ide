@@ -20,8 +20,6 @@ import { Registry } from '../../../../platform/registry/common/platform.js';
 import { ServicesAccessor } from '../../../../editor/browser/editorExtensions.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { URI } from '../../../../base/common/uri.js';
-import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
-
 
 import { mountVoidSettings } from './react/out/void-settings-tsx/index.js'
 import { Codicon } from '../../../../base/common/codicons.js';
@@ -129,11 +127,6 @@ registerAction2(class extends Action2 {
 				{
 					id: MenuId.LayoutControlMenuSubmenu,
 					group: 'z_end',
-				},
-				{
-					id: MenuId.LayoutControlMenu,
-					when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
-					group: 'z_end'
 				}
 			]
 		});

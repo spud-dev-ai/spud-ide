@@ -8,17 +8,10 @@
   "engines": {
     "vscode": "*"
   },
-  "categories": ["Themes"],
-  "contributes": {
-    "themes": [
-      {
-        "id": "Abyss",
-        "label": "%themeLabel%",
-        "uiTheme": "vs-dark",
-        "path": "./themes/abyss-color-theme.json"
-      }
-    ]
-  },
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/microsoft/vscode.git"

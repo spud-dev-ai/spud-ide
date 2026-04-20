@@ -3,7 +3,7 @@
  *  Licensed under the Apache License, Version 2.0. See LICENSE.txt for more information.
  *--------------------------------------------------------------------------------------*/
 
-import { useIsDark } from '../util/services.js';
+import { useIsDark, useSettingsState } from '../util/services.js';
 // import { SidebarThreadSelector } from './SidebarThreadSelector.js';
 // import { SidebarChat } from './SidebarChat.js';
 
@@ -14,8 +14,10 @@ import ErrorBoundary from './ErrorBoundary.js';
 export const Sidebar = ({ className }: { className: string }) => {
 
 	const isDark = useIsDark()
+	const { globalSettings } = useSettingsState()
+	const enhanceDark = isDark && globalSettings.enhanceBuiltinDarkChrome
 	return <div
-		className={`@@void-scope ${isDark ? 'dark' : ''}`}
+		className={`@@void-scope ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`}
 		style={{ width: '100%', height: '100%' }}
 	>
 		<div

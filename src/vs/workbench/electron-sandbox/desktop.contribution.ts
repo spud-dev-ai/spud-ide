@@ -315,7 +315,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from '../common/contri
 		'properties': {
 			'keyboard.touchbar.enabled': {
 				'type': 'boolean',
-				'default': true,
+				'default': false,
 				'description': localize('touchbar.enabled', "Enables the macOS touchbar buttons on the keyboard if available."),
 				'included': isMacintosh
 			},

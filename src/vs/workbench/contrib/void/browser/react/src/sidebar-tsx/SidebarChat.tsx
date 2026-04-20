@@ -6,7 +6,7 @@
 import React, { ButtonHTMLAttributes, FormEvent, FormHTMLAttributes, Fragment, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 
-import { useAccessor, useChatThreadsState, useChatThreadsStreamState, useSettingsState, useActiveURI, useCommandBarState, useFullChatThreadsStreamState } from '../util/services.js';
+import { useAccessor, useChatThreadsState, useChatThreadsStreamState, useSettingsState, useActiveURI, useCommandBarState, useFullChatThreadsStreamState, useIsDark, useIsWorkspaceReady } from '../util/services.js';
 import { ScrollType } from '../../../../../../../editor/common/editorCommon.js';
 
 import { ChatMarkdownRender, ChatMessageLocation, getApplyBoxId } from '../markdown/ChatMarkdownRender.js';
@@ -16,13 +16,13 @@ import { ErrorDisplay } from './ErrorDisplay.js';
 import { BlockCode, TextAreaFns, VoidCustomDropdownBox, VoidInputBox2, VoidSlider, VoidSwitch, VoidDiffEditor } from '../util/inputs.js';
 import { ModelDropdown, } from '../void-settings-tsx/ModelDropdown.js';
 import { PastThreadsList } from './SidebarThreadSelector.js';
-import { VOID_CTRL_L_ACTION_ID } from '../../../actionIDs.js';
 import { VOID_OPEN_SETTINGS_ACTION_ID } from '../../../voidSettingsPane.js';
+import { VOID_CTRL_L_ACTION_ID, VOID_CTRL_K_ACTION_ID } from '../../../actionIDs.js';
 import { ChatMode, displayInfoOfProviderName, FeatureName, isFeatureNameDisabled } from '../../../../../../../workbench/contrib/void/common/voidSettingsTypes.js';
 import { ICommandService } from '../../../../../../../platform/commands/common/commands.js';
 import { WarningBox } from '../void-settings-tsx/WarningBox.js';
 import { getModelCapabilities, getIsReasoningEnabledState } from '../../../../common/modelCapabilities.js';
-import { AlertTriangle, File, Ban, Check, ChevronRight, Dot, FileIcon, Pencil, Undo, Undo2, X, Flag, Copy as CopyIcon, Info, CirclePlus, Ellipsis, CircleEllipsis, Folder, ALargeSmall, TypeOutline, Text } from 'lucide-react';
+import { AlertTriangle, File, Ban, Check, ChevronRight, Dot, FileIcon, Pencil, Undo, Undo2, X, Flag, Copy as CopyIcon, Info, CirclePlus, Ellipsis, CircleEllipsis, Folder, ALargeSmall, TypeOutline, Text, Sparkles, Search, Wand2, Bug, FlaskConical, BookOpen } from 'lucide-react';
 import { ChatMessage, CheckpointEntry, StagingSelectionItem, ToolMessage } from '../../../../common/chatThreadServiceTypes.js';
 import { approvalTypeOfBuiltinToolName, BuiltinToolCallParams, BuiltinToolName, ToolName, LintErrorItem, ToolApprovalType, toolApprovalTypes } from '../../../../common/toolsServiceTypes.js';
 import { CopyButton, EditToolAcceptRejectButtonsHTML, IconShell1, JumpToFileButton, JumpToTerminalButton, StatusIndicator, StatusIndicatorForApplyButton, useApplyStreamState, useEditToolStreamState } from '../markdown/ApplyBlockHoverButtons.js';
@@ -31,6 +31,7 @@ import { acceptAllBg, acceptBorder, buttonFontSize, buttonTextColor, rejectAllBg
 import { builtinToolNames, isABuiltinToolName, MAX_FILE_CHARS_PAGE, MAX_TERMINAL_INACTIVE_TIME } from '../../../../common/prompt/prompts.js';
 import { RawToolCallObj } from '../../../../common/sendLLMMessageTypes.js';
 import ErrorBoundary from './ErrorBoundary.js';
+import { SpudCloudBar } from './SpudCloudBar.js';
 import { ToolApprovalTypeSwitch } from '../void-settings-tsx/Settings.js';
 
 import { persistentTerminalNameOfId } from '../../../terminalToolService.js';
@@ -70,7 +71,7 @@ const IconArrowUp = ({ size, className = '' }: { size: number, className?: strin
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
-				fill="black"
+				fill="currentColor"
 				fillRule="evenodd"
 				clipRule="evenodd"
 				d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
@@ -84,8 +85,8 @@ const IconSquare = ({ size, className = '' }: { size: number, className?: string
 	return (
 		<svg
 			className={className}
-			stroke="black"
-			fill="black"
+			stroke="currentColor"
+			fill="currentColor"
 			strokeWidth="0"
 			viewBox="0 0 24 24"
 			width={size}
@@ -254,11 +255,45 @@ const nameOfChatMode = {
 }
 
 const detailOfChatMode = {
-	'normal': 'Normal chat',
-	'gather': 'Reads files, but can\'t edit',
-	'agent': 'Edits files and uses tools',
+	'normal': 'Ask questions without editing files',
+	'gather': 'Read and plan — no file edits',
+	'agent': 'Edit files and run tools',
 }
 
+/** Visual order in the segmented control (maps to ChatMode). */
+const CHAT_MODE_SEGMENT_ORDER: ChatMode[] = ['gather', 'agent', 'normal']
+
+const SEGMENT_LABEL_OF_MODE: Record<ChatMode, string> = {
+	'normal': 'Ask',
+	'gather': 'Plan',
+	'agent': 'Agent',
+}
+
+const ChatModeSegments = () => {
+	const voidSettingsService = useAccessor().get('IVoidSettingsService')
+	const settingsState = useSettingsState()
+	const mode = settingsState.globalSettings.chatMode
+	return (
+		<div className='vc-mode-toolbar'>
+			<div className='vc-mode-segmented' role='tablist' aria-label='Chat mode: Plan, Agent, or Ask'>
+				{CHAT_MODE_SEGMENT_ORDER.map((m) => (
+					<button
+						key={m}
+						type='button'
+						role='tab'
+						aria-selected={mode === m ? 'true' : 'false'}
+						className={`vc-mode-seg${mode === m ? ' vc-mode-seg--active' : ''}`}
+						onClick={() => voidSettingsService.setGlobalSetting('chatMode', m)}
+						data-tooltip-id='void-tooltip'
+						data-tooltip-content={detailOfChatMode[m]}
+					>
+						{SEGMENT_LABEL_OF_MODE[m]}
+					</button>
+				))}
+			</div>
+		</div>
+	)
+}
 
 const ChatModeDropdown = ({ className }: { className: string }) => {
 	const accessor = useAccessor()
@@ -341,62 +376,69 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 		<div
 			ref={divRef}
 			className={`
-				gap-x-1
-                flex flex-col p-2 relative input text-left shrink-0
-                rounded-md
-                bg-void-bg-1
+				vc-composer-root
+				flex flex-col relative shrink-0 text-left
+				rounded-[14px]
+				border border-void-border-3 bg-void-bg-3
 				transition-all duration-200
-				border border-void-border-3 focus-within:border-void-border-1 hover:border-void-border-1
-				max-h-[80vh] overflow-y-auto
-                ${className}
-            `}
-			onClick={(e) => {
+				max-h-[80vh] overflow-y-auto overflow-x-hidden
+				focus-within:border-void-border-2 hover:border-void-border-2
+				${className}
+			`}
+			onClick={() => {
 				onClickAnywhere?.()
 			}}
 		>
-			{/* Selections section */}
 			{showSelections && selections && setSelections && (
-				<SelectedFiles
-					type='staging'
-					selections={selections}
-					setSelections={setSelections}
-					showProspectiveSelections={showProspectiveSelections}
-				/>
+				<div className='px-3 pt-2'>
+					<SelectedFiles
+						type='staging'
+						selections={selections}
+						setSelections={setSelections}
+						showProspectiveSelections={showProspectiveSelections}
+					/>
+				</div>
 			)}
 
-			{/* Input section */}
-			<div className="relative w-full">
-				{children}
-
-				{/* Close button (X) if onClose is provided */}
-				{onClose && (
-					<div className='absolute -top-1 -right-1 cursor-pointer z-1'>
-						<IconX
-							size={12}
-							className="stroke-[2] opacity-80 text-void-fg-3 hover:brightness-95"
-							onClick={onClose}
-						/>
+			<div className='px-2 pt-0.5 pb-1'>
+				<div className='vc-input-surface rounded-[12px] border border-void-border-3 bg-void-bg-1 px-2 py-0.5'>
+					<div className='relative w-full'>
+						{children}
+						{onClose && (
+							<div className='absolute -top-0.5 -right-0.5 cursor-pointer z-[1]'>
+								<IconX
+									size={12}
+									className='stroke-[2] opacity-80 text-void-fg-3 hover:brightness-95'
+									onClick={onClose}
+								/>
+							</div>
+						)}
 					</div>
-				)}
+					<div className='flex justify-end items-center gap-1 pt-0.5 mt-0.5 select-none' aria-hidden>
+						<span className='vc-kbd-chip'>⌘</span>
+						<span className='vc-kbd-chip'>I</span>
+					</div>
+				</div>
 			</div>
 
-			{/* Bottom row */}
-			<div className='flex flex-row justify-between items-end gap-1'>
-				{showModelDropdown && (
-					<div className='flex flex-col gap-y-1'>
+			<div className='vc-composer-footer flex flex-row justify-between items-end gap-2 px-2 py-1.5 border-t border-void-border-3'>
+				{showModelDropdown ? (
+					<div className='flex flex-col gap-y-1 min-w-0'>
 						<ReasoningOptionSlider featureName={featureName} />
-
-						<div className='flex items-center flex-wrap gap-x-2 gap-y-1 text-nowrap '>
-							{featureName === 'Chat' && <ChatModeDropdown className='text-xs text-void-fg-3 bg-void-bg-1 border border-void-border-2 rounded py-0.5 px-1' />}
-							<ModelDropdown featureName={featureName} className='text-xs text-void-fg-3 bg-void-bg-1 rounded' />
+						<div className='flex items-center flex-wrap gap-x-2 gap-y-1 text-nowrap'>
+							{featureName === 'Chat' && <ChatModeSegments />}
+							<ModelDropdown featureName={featureName} className='vc-model-pill text-[10px] text-void-fg-2 bg-void-bg-1 border border-void-border-3 rounded-md px-2 py-0.5 hover:bg-void-bg-2-hover' />
 						</div>
+					</div>
+				) : (
+					<div className='flex flex-col gap-y-1 min-w-0'>
+						<ReasoningOptionSlider featureName={featureName} />
+						{featureName === 'Chat' && <ChatModeSegments />}
 					</div>
 				)}
 
-				<div className="flex items-center gap-2">
-
+				<div className='flex items-center gap-2 flex-shrink-0'>
 					{isStreaming && loadingIcon}
-
 					{isStreaming ? (
 						<ButtonStop onClick={onAbort} />
 					) : (
@@ -406,23 +448,22 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 						/>
 					)}
 				</div>
-
 			</div>
 		</div>
-	);
+	)
 };
 
 
 
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement>
-const DEFAULT_BUTTON_SIZE = 22;
+const DEFAULT_BUTTON_SIZE = 20;
 export const ButtonSubmit = ({ className, disabled, ...props }: ButtonProps & Required<Pick<ButtonProps, 'disabled'>>) => {
 
 	return <button
 		type='button'
 		className={`rounded-full flex-shrink-0 flex-grow-0 flex items-center justify-center
-			${disabled ? 'bg-vscode-disabled-fg cursor-default' : 'bg-white cursor-pointer'}
+			${disabled ? 'bg-vscode-disabled-fg cursor-default' : 'bg-white text-void-bg-3 cursor-pointer'}
 			${className}
 		`}
 		// data-tooltip-id='void-tooltip'
@@ -437,7 +478,7 @@ export const ButtonSubmit = ({ className, disabled, ...props }: ButtonProps & Re
 export const ButtonStop = ({ className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => {
 	return <button
 		className={`rounded-full flex-shrink-0 flex-grow-0 cursor-pointer flex items-center justify-center
-			bg-white
+			bg-white text-void-bg-3
 			${className}
 		`}
 		type='button'
@@ -531,6 +572,86 @@ export const getBasename = (pathStr: string, parts: number = 1) => {
 	const allParts = pathStr.split('/') // split on /
 	if (allParts.length === 0) return pathStr
 	return allParts.slice(-parts).join('/')
+}
+
+type PreviewActionId = 'preview_here' | 'preview_side' | 'open'
+
+const markdownPreviewExtensions = new Set([
+	'md',
+	'markdown',
+	'mdown',
+	'mkdn',
+	'mkd',
+	'mdx',
+	'mmd',
+	'mermaid',
+])
+
+const previewableFileExtensions = new Set([
+	...markdownPreviewExtensions,
+	'csv',
+	'tsv',
+	'pdf',
+	'drawio',
+	'dio',
+	'json',
+	'jsonc',
+	'yaml',
+	'yml',
+	'xml',
+	'html',
+	'htm',
+	'svg',
+	'txt',
+	'log',
+	'form',
+])
+
+const previewViewTypeByExtension = new Map<string, string>([
+	['pdf', 'pdf.preview'],
+	['drawio', 'hediet.vscode-drawio'],
+	['dio', 'hediet.vscode-drawio'],
+])
+
+const getFileExtension = (fsPath: string) => {
+	const basename = getBasename(fsPath).toLowerCase()
+	const idx = basename.lastIndexOf('.')
+	if (idx <= 0 || idx === basename.length - 1) return ''
+	return basename.slice(idx + 1)
+}
+
+const canShowPreviewForFile = (uri: URI) => {
+	return previewableFileExtensions.has(getFileExtension(uri.fsPath))
+}
+
+const runPreviewAction = async (uri: URI, action: PreviewActionId, commandService: ICommandService) => {
+	const extension = getFileExtension(uri.fsPath)
+	const isMarkdown = markdownPreviewExtensions.has(extension)
+	const explicitViewType = previewViewTypeByExtension.get(extension)
+
+	if (action === 'open') {
+		await commandService.executeCommand('vscode.open', uri)
+		return
+	}
+
+	if (isMarkdown) {
+		await commandService.executeCommand(
+			action === 'preview_side' ? 'markdown.showPreviewToSide' : 'markdown.showPreview',
+			uri
+		)
+		return
+	}
+
+	if (explicitViewType) {
+		await commandService.executeCommand('vscode.openWith', uri, explicitViewType)
+		return
+	}
+
+	await commandService.executeCommand('vscode.open', uri, {
+		preview: true,
+		preserveFocus: action === 'preview_side',
+		viewColumn: action === 'preview_side' ? 2 : undefined,
+	})
 }
 
 
@@ -1171,61 +1292,60 @@ const UserMessageComponent = ({ chatMessage, messageIdx, isCheckpointGhost, curr
 
 	const isMsgAfterCheckpoint = currCheckpointIdx !== undefined && currCheckpointIdx === messageIdx - 1
 
-	return <div
-		// align chatbubble accoridng to role
-		className={`
-        relative ml-auto
-        ${mode === 'edit' ? 'w-full max-w-full'
-				: mode === 'display' ? `self-end w-fit max-w-full whitespace-pre-wrap` : '' // user words should be pre
-			}
+	const ghostCls = isCheckpointGhost && !isMsgAfterCheckpoint ? 'opacity-50 pointer-events-none' : ''
 
-        ${isCheckpointGhost && !isMsgAfterCheckpoint ? 'opacity-50 pointer-events-none' : ''}
-    `}
-		onMouseEnter={() => setIsHovered(true)}
-		onMouseLeave={() => setIsHovered(false)}
-	>
+	if (mode === 'edit') {
+		return (
+			<div
+				className={`relative w-full max-w-full ${ghostCls}`}
+				onMouseEnter={() => setIsHovered(true)}
+				onMouseLeave={() => setIsHovered(false)}
+			>
+				{chatbubbleContents}
+			</div>
+		)
+	}
+
+	return (
 		<div
-			// style chatbubble according to role
-			className={`
-            text-left rounded-lg max-w-full
-            ${mode === 'edit' ? ''
-					: mode === 'display' ? 'p-2 flex flex-col bg-void-bg-1 text-void-fg-1 overflow-x-auto cursor-pointer' : ''
-				}
-        `}
-			onClick={() => { if (mode === 'display') { onOpenEdit() } }}
+			className={`relative w-full max-w-full ${ghostCls}`}
+			onMouseEnter={() => setIsHovered(true)}
+			onMouseLeave={() => setIsHovered(false)}
 		>
-			{chatbubbleContents}
+			<div className='vc-turn-row vc-turn-row--user flex gap-2.5 w-full items-start'>
+				<span className='vc-avatar vc-avatar--user' aria-hidden>Y</span>
+				<div className='min-w-0 flex-1 flex flex-col gap-1'>
+					<span className='vc-turn-meta'>
+						<span className='vc-turn-label'>You</span>
+						<span className='vc-turn-time'>now</span>
+					</span>
+					<div className='relative w-full whitespace-pre-wrap'>
+						<div
+							className='vc-msg-bubble text-left max-w-full text-void-fg-1 overflow-x-auto cursor-pointer'
+							onClick={() => { onOpenEdit() }}
+						>
+							{chatbubbleContents}
+						</div>
+						<div className='absolute -top-1 -right-1 z-[1]'>
+							<EditSymbol
+								size={18}
+								className={`
+									cursor-pointer
+									p-[2px]
+									bg-void-bg-1 border border-void-border-1 rounded-md
+									transition-opacity duration-200 ease-in-out
+									${isHovered || (isFocused && mode === 'edit') ? 'opacity-100' : 'opacity-0'}
+								`}
+								onClick={() => {
+									onOpenEdit()
+								}}
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
-
-
-
-		<div
-			className="absolute -top-1 -right-1 translate-x-0 -translate-y-0 z-1"
-		// data-tooltip-id='void-tooltip'
-		// data-tooltip-content='Edit message'
-		// data-tooltip-place='left'
-		>
-			<EditSymbol
-				size={18}
-				className={`
-                    cursor-pointer
-                    p-[2px]
-                    bg-void-bg-1 border border-void-border-1 rounded-md
-                    transition-opacity duration-200 ease-in-out
-                    ${isHovered || (isFocused && mode === 'edit') ? 'opacity-100' : 'opacity-0'}
-                `}
-				onClick={() => {
-					if (mode === 'display') {
-						onOpenEdit()
-					} else if (mode === 'edit') {
-						onCloseEdit()
-					}
-				}}
-			/>
-		</div>
-
-
-	</div>
+	)
 
 }
 
@@ -1340,37 +1460,45 @@ const AssistantMessageComponent = ({ chatMessage, isCheckpointGhost, isCommitted
 	const isEmpty = !chatMessage.displayContent && !chatMessage.reasoning
 	if (isEmpty) return null
 
-	return <>
-		{/* reasoning token */}
-		{hasReasoning &&
-			<div className={`${isCheckpointGhost ? 'opacity-50' : ''}`}>
-				<ReasoningWrapper isDoneReasoning={isDoneReasoning} isStreaming={!isCommitted}>
-					<SmallProseWrapper>
-						<ChatMarkdownRender
-							string={reasoningStr}
-							chatMessageLocation={chatMessageLocation}
-							isApplyEnabled={false}
-							isLinkDetectionEnabled={true}
-						/>
-					</SmallProseWrapper>
-				</ReasoningWrapper>
+	return (
+		<div className='w-full'>
+			<div className={`vc-turn-row vc-turn-row--assistant flex gap-2.5 items-start w-full ${isCheckpointGhost ? 'opacity-50' : ''}`}>
+				<span className='vc-avatar vc-avatar--spud' aria-hidden>S</span>
+				<div className='min-w-0 flex-1 flex flex-col gap-2'>
+					<span className='vc-turn-meta'>
+						<span className='vc-turn-label'>Spud</span>
+						<span className='vc-turn-time'>now</span>
+					</span>
+					{hasReasoning &&
+						<div>
+							<ReasoningWrapper isDoneReasoning={isDoneReasoning} isStreaming={!isCommitted}>
+								<SmallProseWrapper>
+									<ChatMarkdownRender
+										string={reasoningStr}
+										chatMessageLocation={chatMessageLocation}
+										isApplyEnabled={false}
+										isLinkDetectionEnabled={true}
+									/>
+								</SmallProseWrapper>
+							</ReasoningWrapper>
+						</div>
+					}
+					{chatMessage.displayContent &&
+						<div className='vc-msg-bubble max-w-full'>
+							<ProseWrapper>
+								<ChatMarkdownRender
+									string={chatMessage.displayContent || ''}
+									chatMessageLocation={chatMessageLocation}
+									isApplyEnabled={true}
+									isLinkDetectionEnabled={true}
+								/>
+							</ProseWrapper>
+						</div>
+					}
+				</div>
 			</div>
-		}
-
-		{/* assistant message */}
-		{chatMessage.displayContent &&
-			<div className={`${isCheckpointGhost ? 'opacity-50' : ''}`}>
-				<ProseWrapper>
-					<ChatMarkdownRender
-						string={chatMessage.displayContent || ''}
-						chatMessageLocation={chatMessageLocation}
-						isApplyEnabled={true}
-						isLinkDetectionEnabled={true}
-					/>
-				</ProseWrapper>
-			</div>
-		}
-	</>
+		</div>
+	)
 
 }
 
@@ -2545,7 +2673,7 @@ const _ChatBubble = ({ threadId, chatMessage, currCheckpointIdx, isCommitted, me
 			: MCPToolWrapper as ResultWrapper<ToolName>
 
 		if (ToolResultWrapper)
-			return <>
+			return <div className='w-full'>
 				<div className={`${isCheckpointGhost ? 'opacity-50' : ''}`}>
 					<ToolResultWrapper
 						toolMessage={chatMessage}
@@ -2557,7 +2685,7 @@ const _ChatBubble = ({ threadId, chatMessage, currCheckpointIdx, isCommitted, me
 					<div className={`${isCheckpointGhost ? 'opacity-50 pointer-events-none' : ''}`}>
 						<ToolRequestAcceptRejectButtons toolName={chatMessage.name} />
 					</div> : null}
-			</>
+			</div>
 		return null
 	}
 
@@ -2633,8 +2761,8 @@ const CommandBarInChat = () => {
 
 	const threadStatus = (
 		chatThreadsStreamState?.isRunning === 'awaiting_user' ? { title: 'Needs Approval', color: 'yellow', } as const
-			: chatThreadsStreamState?.isRunning ? { title: 'Running', color: 'orange', } as const
-				: { title: 'Done', color: 'dark', } as const
+			: chatThreadsStreamState?.isRunning ? { title: 'Running', color: 'yellow', } as const
+				: isFinishedMakingThreadChanges ? { title: 'Done', color: 'green', } as const : { title: 'Done', color: 'dark', } as const
 	)
 
 
@@ -2675,6 +2803,7 @@ const CommandBarInChat = () => {
 			data-tooltip-id='void-tooltip'
 			data-tooltip-place='top'
 			data-tooltip-content='Reject all'
+			style={{ color: 'var(--void-traffic-red)' }}
 		/>
 
 		<IconShell1 // AcceptAllButtonWrapper
@@ -2694,6 +2823,7 @@ const CommandBarInChat = () => {
 			data-tooltip-id='void-tooltip'
 			data-tooltip-place='top'
 			data-tooltip-content='Accept all'
+			style={{ color: 'var(--void-traffic-green)' }}
 		/>
 
 
@@ -2705,6 +2835,7 @@ const CommandBarInChat = () => {
 	const fileDetailsContent = <div className="px-2 gap-1 w-full overflow-y-auto">
 		{sortedCommandBarURIs.map((uri, i) => {
 			const basename = getBasename(uri.fsPath)
+			const showPreviewOptions = canShowPreviewForFile(uri)
 
 			const { sortedDiffIds, isStreaming } = commandBarStateOfURI[uri.fsPath] ?? {}
 			const isFinishedMakingFileChanges = !isStreaming
@@ -2712,8 +2843,8 @@ const CommandBarInChat = () => {
 			const numDiffs = sortedDiffIds?.length || 0
 
 			const fileStatus = (isFinishedMakingFileChanges
-				? { title: 'Done', color: 'dark', } as const
-				: { title: 'Running', color: 'orange', } as const
+				? numDiffs > 0 ? { title: 'Done', color: 'green', } as const : { title: 'Done', color: 'dark', } as const
+				: { title: 'Running', color: 'yellow', } as const
 			)
 
 			const fileNameHTML = <div
@@ -2728,7 +2859,12 @@ const CommandBarInChat = () => {
 
 
 			const detailsContent = <div className='flex px-4'>
-				<span className="text-void-fg-3 opacity-80">{numDiffs} diff{numDiffs !== 1 ? 's' : ''}</span>
+				<span
+					className="opacity-80"
+					style={{ color: numDiffs > 0 ? 'var(--void-traffic-yellow)' : 'var(--void-fg-3)' }}
+				>
+					{numDiffs} diff{numDiffs !== 1 ? 's' : ''}
+				</span>
 			</div>
 
 			const acceptRejectButtons = <div
@@ -2749,6 +2885,7 @@ const CommandBarInChat = () => {
 					data-tooltip-id='void-tooltip'
 					data-tooltip-place='top'
 					data-tooltip-content='Reject file'
+					style={{ color: 'var(--void-traffic-red)' }}
 
 				/>
 				<IconShell1 // AcceptAllButtonWrapper
@@ -2757,6 +2894,7 @@ const CommandBarInChat = () => {
 					data-tooltip-id='void-tooltip'
 					data-tooltip-place='top'
 					data-tooltip-content='Accept file'
+					style={{ color: 'var(--void-traffic-green)' }}
 				/>
 
 			</div>
@@ -2771,6 +2909,28 @@ const CommandBarInChat = () => {
 						{detailsContent}
 					</div>
 					<div className="flex items-center gap-2">
+						{showPreviewOptions ? (
+							<select
+								className='text-[10px] rounded border border-void-border-3 bg-void-bg-1-alt text-void-fg-2 px-1.5 py-[1px] max-w-[110px]'
+								defaultValue=''
+								aria-label='Preview options'
+								title='Preview options'
+								onChange={(e) => {
+									const action = e.target.value as PreviewActionId
+									if (!action) return
+									void runPreviewAction(uri, action, commandService)
+									e.currentTarget.value = ''
+								}}
+								data-tooltip-id='void-tooltip'
+								data-tooltip-place='top'
+								data-tooltip-content='Preview with built-in/recommended extension'
+							>
+								<option value=''>Preview</option>
+								<option value='preview_here'>Preview here</option>
+								<option value='preview_side'>Preview to side</option>
+								<option value='open'>Open file</option>
+							</select>
+						) : null}
 						{acceptRejectButtons}
 						{fileStatusHTML}
 					</div>
@@ -2799,43 +2959,39 @@ const CommandBarInChat = () => {
 	)
 
 	return (
-		<>
-			{/* file details */}
-			<div className='px-2'>
-				<div
-					className={`
-						select-none
-						flex w-full rounded-t-lg bg-void-bg-3
-						text-void-fg-3 text-xs text-nowrap
-
-						overflow-hidden transition-all duration-200 ease-in-out
-						${isFileDetailsOpened ? 'max-h-24' : 'max-h-0'}
-					`}
-				>
-					{fileDetailsContent}
-				</div>
-			</div>
-			{/* main content */}
+		<div className='px-2 pt-1 pb-1'>
 			<div
 				className={`
 					select-none
-					flex w-full rounded-t-lg bg-void-bg-3
+					w-full rounded-md bg-void-bg-1 border border-void-border-3
 					text-void-fg-3 text-xs text-nowrap
-					border-t border-l border-r border-zinc-300/10
-
-					px-2 py-1
-					justify-between
+					overflow-hidden
 				`}
 			>
-				<div className="flex gap-2 items-center">
-					{fileDetailsButton}
+				{/* expandable per-file details */}
+				<div
+					className={`
+						overflow-hidden transition-all duration-200 ease-in-out
+						${isFileDetailsOpened ? 'max-h-24 border-b border-void-border-3' : 'max-h-0'}
+					`}
+				>
+					<div className='py-1'>
+						{fileDetailsContent}
+					</div>
 				</div>
-				<div className="flex gap-2 items-center">
-					{acceptRejectAllButtons}
-					{threadStatusHTML}
+
+				{/* summary row */}
+				<div className='flex w-full items-center justify-between px-2.5 py-1'>
+					<div className='flex gap-2 items-center min-w-0'>
+						{fileDetailsButton}
+					</div>
+					<div className='flex gap-2 items-center'>
+						{acceptRejectAllButtons}
+						{threadStatusHTML}
+					</div>
 				</div>
 			</div>
-		</>
+		</div>
 	)
 }
 
@@ -2885,8 +3041,11 @@ export const SidebarChat = () => {
 	const accessor = useAccessor()
 	const commandService = accessor.get('ICommandService')
 	const chatThreadsService = accessor.get('IChatThreadService')
+	const voidSettingsService = accessor.get('IVoidSettingsService')
 
 	const settingsState = useSettingsState()
+	const isDarkChrome = useIsDark()
+	const isWorkspaceReady = useIsWorkspaceReady()
 	// ----- HIGHER STATE -----
 
 	// threads state
@@ -2897,6 +3056,9 @@ export const SidebarChat = () => {
 
 	const selections = currentThread.state.stagingSelections
 	const setSelections = (s: StagingSelectionItem[]) => { chatThreadsService.setCurrentThreadState({ stagingSelections: s }) }
+
+	const { sortedURIs: sortedBarURIs } = useCommandBarState()
+	const numBarFiles = sortedBarURIs.length
 
 	// stream state
 	const currThreadStreamState = useChatThreadsStreamState(chatThreadsState.currentThreadId)
@@ -2943,8 +3105,6 @@ export const SidebarChat = () => {
 		const threadId = currentThread.id
 		await chatThreadsService.abortRunning(threadId)
 	}
-
-	const keybindingString = accessor.get('IKeybindingService').lookupKeybinding(VOID_CTRL_L_ACTION_ID)?.getLabel()
 
 	const threadId = currentThread.id
 	const currCheckpointIdx = chatThreadsState.allThreads[threadId]?.state?.currCheckpointIdx ?? undefined  // if not exist, treat like checkpoint is last message (infinity)
@@ -3011,16 +3171,25 @@ export const SidebarChat = () => {
 			: null
 		: null
 
+	const hideEmptyMessageFeed =
+		previousMessagesHTML.length === 0 &&
+		!displayContentSoFar &&
+		!reasoningSoFar &&
+		!isRunning &&
+		!toolIsGenerating &&
+		latestError === undefined
+
 	const messagesHTML = <ScrollToBottomContainer
 		key={'messages' + chatThreadsState.currentThreadId} // force rerender on all children if id changes
 		scrollContainerRef={scrollContainerRef}
 		className={`
-			flex flex-col
-			px-4 py-4 space-y-4
-			w-full h-full
+			vc-msg-scroll
+			flex flex-col flex-1 min-h-0
+			px-3 py-3 gap-3
+			w-full
 			overflow-x-hidden
 			overflow-y-auto
-			${previousMessagesHTML.length === 0 && !displayContentSoFar ? 'hidden' : ''}
+			${hideEmptyMessageFeed ? 'hidden' : ''}
 		`}
 	>
 		{/* previous messages */}
@@ -3031,7 +3200,7 @@ export const SidebarChat = () => {
 		{generatingTool}
 
 		{/* loading indicator */}
-		{isRunning === 'LLM' || isRunning === 'idle' && !toolIsGenerating ? <ProseWrapper>
+		{isRunning === 'LLM' || (isRunning === 'idle' && !toolIsGenerating) ? <ProseWrapper>
 			{<IconLoading className='opacity-50 text-sm' />}
 		</ProseWrapper> : null}
 
@@ -3063,6 +3232,15 @@ export const SidebarChat = () => {
 		}
 	}, [onSubmit, onAbort, isRunning])
 
+	const quickPromptSuggestions = [
+		'Explain this codebase',
+		'Improve the open file',
+		'Add tests for current file',
+		'Find and fix a bug',
+		'Document this code',
+	]
+	const showQuickPromptSuggestions = previousMessages.length === 0 && !isRunning && !toolIsGenerating
+
 	const inputChatArea = <VoidChatArea
 		featureName='Chat'
 		onSubmit={() => onSubmit()}
@@ -3070,81 +3248,233 @@ export const SidebarChat = () => {
 		isStreaming={!!isRunning}
 		isDisabled={isDisabled}
 		showSelections={true}
-		// showProspectiveSelections={previousMessagesHTML.length === 0}
+		showModelDropdown={true}
 		selections={selections}
 		setSelections={setSelections}
 		onClickAnywhere={() => { textAreaRef.current?.focus() }}
 	>
+		{showQuickPromptSuggestions ? (
+			<div className='vc-composer-suggestion-scroll' role='list' aria-label='Suggested prompts'>
+				{quickPromptSuggestions.map((prompt, i) => (
+					<button
+						key={i}
+						type='button'
+						role='listitem'
+						className='vc-composer-suggestion-chip'
+						onClick={() => onSubmit(prompt)}
+					>
+						{prompt}
+					</button>
+				))}
+			</div>
+		) : null}
+
 		<VoidInputBox2
 			enableAtToMention
-			className={`min-h-[81px] px-0.5 py-0.5`}
-			placeholder={`@ to mention, ${keybindingString ? `${keybindingString} to add a selection. ` : ''}Enter instructions...`}
+			className={`h-[28px] min-h-[28px] max-h-[28px] px-0.5 py-0.5 whitespace-nowrap overflow-x-auto overflow-y-hidden`}
+			placeholder='Ask Spud to do something'
 			onChangeText={onChangeText}
 			onKeyDown={onKeyDown}
 			onFocus={() => { chatThreadsService.setCurrentlyFocusedMessageIdx(undefined) }}
 			ref={textAreaRef}
 			fnsRef={textAreaFnsRef}
-			multiline={true}
+			multiline={false}
 		/>
 
 	</VoidChatArea>
 
 
-	const isLandingPage = previousMessages.length === 0
+	// Keep the landing/home screen only for the very first empty thread.
+	// When user clicks "+" (new chat) and additional threads exist, stay in thread view.
+	const isLandingPage = previousMessages.length === 0 && Object.keys(chatThreadsState.allThreads).length <= 1
 
+	// OS-appropriate keybinding labels (⌘L / Ctrl+L, etc.) — falls back gracefully
+	// if the action has no keybinding registered.
+	const keybindingService = accessor.get('IKeybindingService')
+	const focusShortcut = keybindingService.lookupKeybinding(VOID_CTRL_L_ACTION_ID)?.getLabel()
+	const quickEditShortcut = keybindingService.lookupKeybinding(VOID_CTRL_K_ACTION_ID)?.getLabel()
 
-	const initiallySuggestedPromptsHTML = <div className='flex flex-col gap-2 w-full text-nowrap text-void-fg-3 select-none'>
-		{[
-			'Summarize my codebase',
-			'How do types work in Rust?',
-			'Create a .voidrules file for me'
-		].map((text, index) => (
-			<div
-				key={index}
-				className='py-1 px-2 rounded text-sm bg-zinc-700/5 hover:bg-zinc-700/10 dark:bg-zinc-300/5 dark:hover:bg-zinc-300/10 cursor-pointer opacity-80 hover:opacity-100'
-				onClick={() => onSubmit(text)}
-			>
-				{text}
+	// Suggestion catalogue for the empty-thread landing page. Each entry drives
+	// one `.vc-suggestion-card`; the `prompt` is what gets sent on click, while
+	// `title` is the short human-readable label shown in the UI.
+	const landingSuggestions: { icon: React.ComponentType<{ size?: number, className?: string }>, title: string, prompt: string }[] = [
+		{ icon: Search, title: 'Explain this codebase', prompt: 'Summarize the architecture and key modules of this codebase.' },
+		{ icon: Wand2, title: 'Improve the open file', prompt: 'Suggest improvements to the code in my open file, prioritising clarity and correctness.' },
+		{ icon: FlaskConical, title: 'Add tests', prompt: 'Write tests for the code in my open file.' },
+		{ icon: Bug, title: 'Find and fix a bug', prompt: 'Find potential bugs in my open file and suggest fixes.' },
+		{ icon: BookOpen, title: 'Document this', prompt: 'Write concise documentation for the code in my open file.' },
+	]
+
+	const landingHero = (
+		<div className='vc-landing-hero'>
+			<div className='flex items-center gap-2'>
+				<Sparkles size={13} className='text-void-fg-3 opacity-80' />
+				<span className='vc-landing-wordmark'>How can Spud help?</span>
 			</div>
-		))}
-	</div>
-
-
-
-	const threadPageInput = <div key={'input' + chatThreadsState.currentThreadId}>
-		<div className='px-4'>
-			<CommandBarInChat />
+			<div className='vc-landing-tagline'>
+				Ask anything about this workspace, or pick a starter below.
+			</div>
+			{(focusShortcut || quickEditShortcut) && (
+				<div className='vc-landing-shortcut-row'>
+					{focusShortcut && (
+						<>
+							<span className='vc-kbd-chip'>{focusShortcut}</span>
+							<span className='vc-landing-kbd-caption'>focus chat</span>
+						</>
+					)}
+					{focusShortcut && quickEditShortcut && <span className='vc-landing-kbd-sep' aria-hidden />}
+					{quickEditShortcut && (
+						<>
+							<span className='vc-kbd-chip'>{quickEditShortcut}</span>
+							<span className='vc-landing-kbd-caption'>quick edit in editor</span>
+						</>
+					)}
+					<span className='vc-landing-kbd-sep' aria-hidden />
+					<span className='vc-kbd-chip'>@</span>
+					<span className='vc-landing-kbd-caption'>mention files</span>
+				</div>
+			)}
 		</div>
+	)
+
+	const landingSuggestionsHTML = (
+		<div className='vc-suggestion-grid w-full'>
+			{landingSuggestions.map((s, i) => (
+				<button
+					key={i}
+					type='button'
+					className='vc-suggestion-card'
+					onClick={() => onSubmit(s.prompt)}
+				>
+					<s.icon size={14} className='vc-suggestion-icon' />
+					<span className='vc-suggestion-card-title'>{s.title}</span>
+				</button>
+			))}
+		</div>
+	)
+
+	// Tab row above the chat: one tab per open thread, plus a "+" to create a
+	// new one. Tabs are sorted by creation time so they feel stable (newest on
+	// the right). Only one tab can be active at a time.
+	const allThreadIdsForTabs = Object.keys(chatThreadsState.allThreads)
+		.sort((a, b) => {
+			const aT = new Date(chatThreadsState.allThreads[a]?.createdAt ?? 0).getTime()
+			const bT = new Date(chatThreadsState.allThreads[b]?.createdAt ?? 0).getTime()
+			return aT - bT
+		})
+	const getThreadTabTitle = (t: ThreadType | undefined): string => {
+		if (!t) return 'New chat'
+		const firstUser = t.messages.find(m => m.role === 'user')
+		if (firstUser && firstUser.role === 'user') {
+			const raw = (firstUser.displayContent ?? '').trim()
+			if (raw) return raw.length > 40 ? raw.slice(0, 40) + '…' : raw
+		}
+		return 'New chat'
+	}
+	const chatTabsBar = (
+		<div className='vc-chat-tabs-bar'>
+			<div className='vc-chat-tabs-scroll' role='tablist' aria-label='Chat threads'>
+				{allThreadIdsForTabs.map(id => {
+					const t = chatThreadsState.allThreads[id]
+					if (!t) return null
+					const isActive = id === chatThreadsState.currentThreadId
+					const title = getThreadTabTitle(t)
+					return (
+						<div
+							key={id}
+							role='tab'
+							aria-selected={isActive ? 'true' : 'false'}
+							tabIndex={isActive ? 0 : -1}
+							className={`vc-chat-tab ${isActive ? 'vc-chat-tab--active' : ''}`}
+							onClick={() => chatThreadsService.switchToThread(id)}
+							data-tooltip-id='void-tooltip'
+							data-tooltip-content={title}
+							data-tooltip-place='bottom'
+						>
+							<span className='vc-chat-tab-label'>{title}</span>
+							{allThreadIdsForTabs.length > 1 ? (
+								<span
+									role='button'
+									aria-label={`Close ${title}`}
+									className='vc-chat-tab-close'
+									onClick={(e) => {
+										e.stopPropagation()
+										chatThreadsService.deleteThread(id)
+									}}
+								>
+									<X size={10} />
+								</span>
+							) : null}
+						</div>
+					)
+				})}
+			</div>
+			<button
+				type='button'
+				className='vc-chat-tab-new'
+				aria-label='New chat'
+				title='New chat'
+				onClick={() => chatThreadsService.openNewThread()}
+			>
+				<CirclePlus size={12} />
+			</button>
+		</div>
+	)
+
+	const cloudAndTabs = (
+		<>
+			<SpudCloudBar />
+			{chatTabsBar}
+		</>
+	)
+
+	const threadPageInput = <div key={'input' + chatThreadsState.currentThreadId} className='flex-shrink-0'>
+		<CommandBarInChat />
 		<div className='px-2 pb-2'>
 			{inputChatArea}
 		</div>
 	</div>
 
 	const landingPageInput = <div>
-		<div className='pt-8'>
+		<div className='px-2 pt-2 pb-2'>
 			{inputChatArea}
 		</div>
 	</div>
 
+	const hasOtherThreads = Object.keys(chatThreadsState.allThreads).length > 1
+
 	const landingPageContent = <div
 		ref={sidebarRef}
-		className='w-full h-full max-h-full flex flex-col overflow-auto px-4'
+		className='w-full h-full max-h-full flex flex-col overflow-hidden bg-void-bg-2'
 	>
-		<ErrorBoundary>
-			{landingPageInput}
-		</ErrorBoundary>
+		{cloudAndTabs}
+		<div className='flex-1 min-h-0 overflow-auto'>
+			<div className='vc-agent-surface flex flex-col min-h-0'>
+				{landingHero}
+			</div>
 
-		{Object.keys(chatThreadsState.allThreads).length > 1 ? // show if there are threads
 			<ErrorBoundary>
-				<div className='pt-8 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Previous Threads</div>
-				<PastThreadsList />
+				<div className='px-4 pt-4 mb-2 vc-section-label'>Try</div>
+				<div className='px-3 pb-4'>
+					{landingSuggestionsHTML}
+				</div>
 			</ErrorBoundary>
-			:
+
+			{hasOtherThreads && (
+				<ErrorBoundary>
+					<div className='px-4 pt-1 mb-2 vc-section-label'>Recent threads</div>
+					<div className='px-3 pb-4'>
+						<PastThreadsList variant='card' />
+					</div>
+				</ErrorBoundary>
+			)}
+		</div>
+
+		<div className='flex-shrink-0 vc-landing-dock'>
 			<ErrorBoundary>
-				<div className='pt-8 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Suggestions</div>
-				{initiallySuggestedPromptsHTML}
+				{landingPageInput}
 			</ErrorBoundary>
-		}
+		</div>
 	</div>
 
 
@@ -3163,17 +3493,33 @@ export const SidebarChat = () => {
 	// </div>
 	const threadPageContent = <div
 		ref={sidebarRef}
-		className='w-full h-full flex flex-col overflow-hidden'
+		className='w-full h-full flex flex-col overflow-hidden bg-void-bg-2'
 	>
-
-		<ErrorBoundary>
-			{messagesHTML}
-		</ErrorBoundary>
-		<ErrorBoundary>
-			{threadPageInput}
-		</ErrorBoundary>
+		{cloudAndTabs}
+		<div className='vc-agent-surface flex flex-col flex-1 min-h-0 min-w-0'>
+			<div className='flex-1 min-h-0 flex flex-col'>
+				<ErrorBoundary>
+					{messagesHTML}
+				</ErrorBoundary>
+			</div>
+			<ErrorBoundary>
+				{threadPageInput}
+			</ErrorBoundary>
+		</div>
 	</div>
 
+
+	if (!isWorkspaceReady) {
+		return (
+			<div className='w-full h-full flex items-center justify-center bg-void-bg-2' role='status' aria-live='polite' aria-busy='true'>
+				<div className='vc-workspace-loading'>
+					<span className='vc-workspace-loading-spinner' aria-hidden />
+					<div className='vc-workspace-loading-title'>Loading workspace</div>
+					<div className='vc-workspace-loading-sub'>Spud is getting your project ready…</div>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<Fragment key={threadId} // force rerender when change thread

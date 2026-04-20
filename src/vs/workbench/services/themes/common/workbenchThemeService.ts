@@ -39,12 +39,19 @@ export enum ThemeSettings {
 }
 
 export enum ThemeSettingDefaults {
-	COLOR_THEME_DARK = 'Default Dark+', // Void changed this from 'Default Dark Modern'
-	COLOR_THEME_LIGHT = 'Default Light Modern',
-	COLOR_THEME_HC_DARK = 'Default High Contrast',
-	COLOR_THEME_HC_LIGHT = 'Default High Contrast Light',
+	// Spud themes are the only color themes shipped (theme-defaults' themes
+	// were removed). Anything that falls through to these hardcoded defaults
+	// must resolve to a theme that actually exists, otherwise the workbench
+	// renders unstyled on first launch.
+	COLOR_THEME_DARK = 'Spud Paper Dark',
+	COLOR_THEME_LIGHT = 'Spud Paper',
+	COLOR_THEME_HC_DARK = 'Spud Paper Dark',
+	COLOR_THEME_HC_LIGHT = 'Spud Paper',
 
-	COLOR_THEME_DARK_OLD = 'Default Dark Modern', // Void changed this from 'Default Dark+'
+	// Legacy default IDs kept for settings-migration / upgrade-path detection
+	// only — they reference themes that no longer exist, but consumers only
+	// compare against these strings, never resolve them.
+	COLOR_THEME_DARK_OLD = 'Default Dark Modern',
 	COLOR_THEME_LIGHT_OLD = 'Default Light+',
 
 	FILE_ICON_THEME = 'vs-seti',

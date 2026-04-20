@@ -49,31 +49,33 @@
 	height: calc(100% - 70px);
 }
 
-/* light */
-.void-void-icon,
-.monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark > .letterpress {
+/* Onboarding hero icon (VoidIcon react component) — kept as background-image so the
+   component's JS `filter: invert(1)` light-theme flip still works. */
+.void-void-icon {
 	width: 100%;
 	max-height: 100%;
 	aspect-ratio: 1/1;
-	background-image: url('./void_cube_noshadow.png'); /* // Void */
+	background-image: url('./logo-mark.svg'); /* // Spud */
 	background-size: contain;
 	background-position-x: center;
 	background-repeat: no-repeat;
 }
 
-.void-void-icon,
-.monaco-workbench.vs-dark .part.editor > .content .editor-group-container .editor-group-watermark > .letterpress {
-	background-image: url('./void_cube_noshadow.png'); /* // Void */
-}
-
-.void-void-icon,
-.monaco-workbench.hc-light .part.editor > .content .editor-group-container .editor-group-watermark > .letterpress {
-	background-image: url('./void_cube_noshadow.png'); /* // Void */
-}
-
-.void-void-icon,
-.monaco-workbench.hc-black .part.editor > .content .editor-group-container .editor-group-watermark > .letterpress {
-	background-image: url('./void_cube_noshadow.png'); /* // Void */
+/* Empty editor watermark — render the Spud silhouette via mask-image so it picks up the
+   themed `--vscode-editorWatermark-foreground` color on light / dark / high-contrast themes. */
+.monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark > .letterpress {
+	width: 100%;
+	max-height: 100%;
+	aspect-ratio: 1/1;
+	background-color: var(--vscode-editorWatermark-foreground);
+	-webkit-mask-image: url('./logo-mark.svg'); /* // Spud */
+	        mask-image: url('./logo-mark.svg');
+	-webkit-mask-size: contain;
+	        mask-size: contain;
+	-webkit-mask-position: center;
+	        mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	        mask-repeat: no-repeat;
 }
 
 .monaco-workbench .part.editor > .content:not(.empty) .editor-group-container > .editor-group-watermark > .shortcuts,

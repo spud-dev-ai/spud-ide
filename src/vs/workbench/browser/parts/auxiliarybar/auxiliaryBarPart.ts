@@ -243,13 +243,12 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	}
 
 	protected getCompositeBarPosition(): CompositeBarPosition {
-		switch (this.configuration.position) {
-			case ActivityBarPosition.TOP: return CompositeBarPosition.TOP;
-			case ActivityBarPosition.BOTTOM: return CompositeBarPosition.BOTTOM;
-			case ActivityBarPosition.HIDDEN: return CompositeBarPosition.TITLE;
-			case ActivityBarPosition.DEFAULT: return CompositeBarPosition.TITLE;
-			default: return CompositeBarPosition.TITLE;
-		}
+		// Spud: always render the auxiliary bar's composite bar inside the
+		// title row. This collapses the separate cube/viewlet switcher row
+		// and the "CHAT" title row into a single header so users only see
+		// one bar in the chat panel, regardless of the global activity-bar
+		// location preference.
+		return CompositeBarPosition.TITLE;
 	}
 
 	protected override createHeaderArea() {

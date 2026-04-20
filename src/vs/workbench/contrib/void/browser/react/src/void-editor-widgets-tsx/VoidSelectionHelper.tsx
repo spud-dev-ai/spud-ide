@@ -18,9 +18,11 @@ import { VOID_OPEN_SETTINGS_ACTION_ID } from '../../../voidSettingsPane.js';
 export const VoidSelectionHelperMain = (props: VoidSelectionHelperProps) => {
 
 	const isDark = useIsDark()
+	const { globalSettings } = useSettingsState()
+	const enhanceDark = isDark && globalSettings.enhanceBuiltinDarkChrome
 
 	return <div
-		className={`@@void-scope ${isDark ? 'dark' : ''}`}
+		className={`@@void-scope ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`}
 	>
 		<VoidSelectionHelper {...props} />
 	</div>

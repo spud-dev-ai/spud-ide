@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------*/
 
 
-import { useAccessor, useCommandBarState, useIsDark } from '../util/services.js';
+import { useAccessor, useCommandBarState, useIsDark, useSettingsState } from '../util/services.js';
 
 import '../styles.css'
 import { useCallback, useEffect, useState, useRef } from 'react';
@@ -25,9 +25,11 @@ import {
 
 export const VoidCommandBarMain = ({ uri, editor }: VoidCommandBarProps) => {
 	const isDark = useIsDark()
+	const { globalSettings } = useSettingsState()
+	const enhanceDark = isDark && globalSettings.enhanceBuiltinDarkChrome
 
 	return <div
-		className={`@@void-scope ${isDark ? 'dark' : ''}`}
+		className={`@@void-scope ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`}
 	>
 		<VoidCommandBar uri={uri} editor={editor} />
 	</div>

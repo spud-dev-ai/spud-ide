@@ -1626,16 +1626,9 @@ We only need to do it for files that were edited since `from`, ie files between 
 
 
 	openNewThread() {
-		// if a thread with 0 messages already exists, switch to it
 		const { allThreads: currentThreads } = this.state
-		for (const threadId in currentThreads) {
-			if (currentThreads[threadId]!.messages.length === 0) {
-				// switch to the existing empty thread and exit
-				this.switchToThread(threadId)
-				return
-			}
-		}
-		// otherwise, start a new thread
+		// Always create a fresh thread for explicit "new chat" actions.
+		// Reusing a prior empty thread makes "+" feel like it jumps home.
 		const newThread = newThreadObject()
 
 		// update state
@@ -1649,15 +1642,35 @@ We only need to do it for files that were edited since `from`, ie files between 
 
 
 	deleteThread(threadId: string): void {
-		const { allThreads: currentThreads } = this.state
+		const { allThreads: currentThreads, currentThreadId } = this.state
 
 		// delete the thread
 		const newThreads = { ...currentThreads };
 		delete newThreads[threadId];
 
+		let nextCurrentId = currentThreadId
+		if (currentThreadId === threadId) {
+			const remainingIds = Object.keys(newThreads)
+			if (remainingIds.length > 0) {
+				// stay on the most recently touched thread (matches tab UX)
+				nextCurrentId = remainingIds.sort((a, b) => {
+					const ta = new Date(newThreads[a].lastModified).getTime()
+					const tb = new Date(newThreads[b].lastModified).getTime()
+					return tb - ta
+				})[0]
+			} else {
+				// invariant: there is always a current thread (see constructor)
+				const fresh = newThreadObject()
+				newThreads[fresh.id] = fresh
+				nextCurrentId = fresh.id
+			}
+		}
+
+		delete this.streamState[threadId]
+
 		// store the updated threads
 		this._storeAllThreads(newThreads);
-		this._setState({ ...this.state, allThreads: newThreads })
+		this._setState({ ...this.state, allThreads: newThreads, currentThreadId: nextCurrentId })
 	}
 
 	duplicateThread(threadId: string) {

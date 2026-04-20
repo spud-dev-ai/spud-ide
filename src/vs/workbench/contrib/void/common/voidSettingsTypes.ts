@@ -452,6 +452,12 @@ export type GlobalSettings = {
 	isOnboardingComplete: boolean;
 	disableSystemMessage: boolean;
 	autoAcceptLLMChanges: boolean;
+	/** When on, Spud panels get slightly richer contrast on top of the active color theme in dark mode (no separate theme file). */
+	enhanceBuiltinDarkChrome: boolean;
+	/** Base URL for Spud Cloud API (same host as the dashboard for Pages + Functions). */
+	spudCloudApiBase: string;
+	/** Workspace id for Cloud API calls (`?workspace=`). */
+	spudWorkspaceId: string;
 }
 
 export const defaultGlobalSettings: GlobalSettings = {
@@ -468,6 +474,9 @@ export const defaultGlobalSettings: GlobalSettings = {
 	isOnboardingComplete: false,
 	disableSystemMessage: false,
 	autoAcceptLLMChanges: false,
+	enhanceBuiltinDarkChrome: true,
+	spudCloudApiBase: 'https://cloud.spud.dev',
+	spudWorkspaceId: 'ws_acme',
 }
 
 export type GlobalSettingName = keyof GlobalSettings

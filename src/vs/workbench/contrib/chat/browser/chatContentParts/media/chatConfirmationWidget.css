@@ -5,11 +5,16 @@
 
 .chat-confirmation-widget {
 	border: 1px solid var(--vscode-chat-requestBorder);
-	border-radius: 4px;
-	padding: 8px 12px 12px;
+	border-radius: 6px;
+	padding: 10px 14px 14px;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
+	transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.chat-confirmation-widget:hover {
+	border-color: var(--vscode-focusBorder, rgba(128, 128, 128, 0.2));
 }
 
 .chat-confirmation-widget:not(:last-child) {

@@ -24,6 +24,7 @@
 }
 
 
+
 /* Renamed from void-watermark-button to void-openfolder-button */
 .void-openfolder-button {
     padding: 8px 20px;
@@ -145,6 +146,46 @@
 .void-scope::-webkit-scrollbar-corner,
 .void-scope *::-webkit-scrollbar-corner {
 	background-color: var(--void-bg-3) !important;
+}
+
+/* =======================================================================
+ * Spud editor tabs — round the top corners of individual tabs only.
+ * No padding, no background, no accent line, no breadcrumb changes.
+ * ===================================================================== */
+.monaco-workbench .part.editor .editor-group-container .tabs-container .tab {
+	border-top-left-radius: 6px !important;
+	border-top-right-radius: 6px !important;
+}
+
+
+/* =======================================================================
+ * Spud enhanced dark chrome — applies ONLY when body.spud-enhance-dark is
+ * set (Spud settings: "Enhance built-in dark mode" + the active theme is
+ * dark). Tints common VS Code workbench variables a bit richer/darker so
+ * panels feel more premium without introducing a whole new theme.
+ *
+ * Turn-off: uncheck the toggle in Spud Settings → Appearance.
+ * ===================================================================== */
+body.spud-enhance-dark .monaco-workbench {
+	--vscode-sideBar-background: color-mix(in srgb, var(--vscode-sideBar-background) 92%, black 8%);
+	--vscode-sideBarSectionHeader-background: color-mix(in srgb, var(--vscode-sideBarSectionHeader-background) 90%, black 10%);
+	--vscode-activityBar-background: color-mix(in srgb, var(--vscode-activityBar-background) 92%, black 8%);
+	--vscode-editor-background: color-mix(in srgb, var(--vscode-editor-background) 94%, black 6%);
+	--vscode-editorGroupHeader-tabsBackground: color-mix(in srgb, var(--vscode-editorGroupHeader-tabsBackground) 90%, black 10%);
+	--vscode-tab-inactiveBackground: color-mix(in srgb, var(--vscode-tab-inactiveBackground) 88%, black 12%);
+	--vscode-tab-activeBackground: color-mix(in srgb, var(--vscode-tab-activeBackground) 96%, white 4%);
+	--vscode-titleBar-activeBackground: color-mix(in srgb, var(--vscode-titleBar-activeBackground) 92%, black 8%);
+	--vscode-statusBar-background: color-mix(in srgb, var(--vscode-statusBar-background) 92%, black 8%);
+	--vscode-panel-background: color-mix(in srgb, var(--vscode-panel-background) 92%, black 8%);
+	--vscode-input-background: color-mix(in srgb, var(--vscode-input-background) 92%, black 8%);
+
+	/* Borders: gently boost contrast so rounded corners / separators read well */
+	--vscode-sideBar-border: color-mix(in srgb, var(--vscode-sideBar-border, transparent) 70%, white 30%);
+	--vscode-editorGroup-border: color-mix(in srgb, var(--vscode-editorGroup-border, transparent) 70%, white 30%);
+	--vscode-panel-border: color-mix(in srgb, var(--vscode-panel-border, transparent) 70%, white 30%);
+	--vscode-tab-border: color-mix(in srgb, var(--vscode-tab-border, transparent) 70%, white 30%);
+	--vscode-commandCenter-border: color-mix(in srgb, var(--vscode-commandCenter-border, transparent) 75%, white 25%);
+	--vscode-commandCenter-inactiveBorder: color-mix(in srgb, var(--vscode-commandCenter-inactiveBorder, transparent) 70%, white 30%);
 }
 
 /* Add void-scrollable-element styles to match */

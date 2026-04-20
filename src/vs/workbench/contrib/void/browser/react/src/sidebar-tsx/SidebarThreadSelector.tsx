@@ -7,13 +7,13 @@ import { useMemo, useState } from 'react';
 import { CopyButton, IconShell1 } from '../markdown/ApplyBlockHoverButtons.js';
 import { useAccessor, useChatThreadsState, useChatThreadsStreamState, useFullChatThreadsStreamState, useSettingsState } from '../util/services.js';
 import { IconX } from './SidebarChat.js';
-import { Check, Copy, Icon, LoaderCircle, MessageCircleQuestion, Trash2, UserCheck, X } from 'lucide-react';
+import { Check, Copy, History, Icon, LoaderCircle, MessageCircleQuestion, Trash2, UserCheck, X } from 'lucide-react';
 import { IsRunningType, ThreadType } from '../../../chatThreadService.js';
 
 
 const numInitialThreads = 3
 
-export const PastThreadsList = ({ className = '' }: { className?: string }) => {
+export const PastThreadsList = ({ className = '', variant = 'list' }: { className?: string, variant?: 'list' | 'card' }) => {
 	const [showAll, setShowAll] = useState(false);
 
 	const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -41,6 +41,44 @@ export const PastThreadsList = ({ className = '' }: { className?: string }) => {
 	// Get only first 5 threads if not showing all
 	const hasMoreThreads = sortedThreadIds.length > numInitialThreads;
 	const displayThreads = showAll ? sortedThreadIds : sortedThreadIds.slice(0, numInitialThreads);
+
+	if (variant === 'card') {
+		return (
+			<div className={`w-full select-none ${className}`}>
+				<div className='vc-suggestion-grid w-full'>
+					{displayThreads.map((threadId, i) => {
+						const pastThread = allThreads[threadId];
+						if (!pastThread) return null;
+						return (
+							<PastThreadCard
+								key={pastThread.id}
+								pastThread={pastThread}
+								isRunning={runningThreadIds[pastThread.id]}
+							/>
+						);
+					})}
+				</div>
+				{hasMoreThreads && !showAll && (
+					<button
+						type='button'
+						className='mt-2 text-[11px] text-void-fg-3 hover:text-void-fg-2 opacity-80 hover:opacity-100 cursor-pointer'
+						onClick={() => setShowAll(true)}
+					>
+						Show {sortedThreadIds.length - numInitialThreads} more…
+					</button>
+				)}
+				{hasMoreThreads && showAll && (
+					<button
+						type='button'
+						className='mt-2 text-[11px] text-void-fg-3 hover:text-void-fg-2 opacity-80 hover:opacity-100 cursor-pointer'
+						onClick={() => setShowAll(false)}
+					>
+						Show less
+					</button>
+				)}
+			</div>
+		)
+	}
 
 	return (
 		<div className={`flex flex-col mb-2 gap-2 w-full text-nowrap text-void-fg-3 select-none relative ${className}`}>
@@ -275,4 +313,50 @@ const PastThreadElement = ({ pastThread, idx, hoveredIdx, setHoveredIdx, isRunni
 			</div>
 		</div>
 	</div>
+}
+
+
+const PastThreadCard = ({ pastThread, isRunning }: {
+	pastThread: ThreadType,
+	isRunning: IsRunningType | undefined,
+}) => {
+	const accessor = useAccessor()
+	const chatThreadsService = accessor.get('IChatThreadService')
+
+	const firstUserMsgIdx = pastThread.messages.findIndex((msg) => msg.role === 'user')
+	let firstMsg = ''
+	if (firstUserMsgIdx !== -1) {
+		const m = pastThread.messages[firstUserMsgIdx]
+		firstMsg = (m.role === 'user' && m.displayContent) || ''
+	}
+	const title = firstMsg.trim() || 'Untitled thread'
+
+	const numMessages = pastThread.messages.filter((msg) => msg.role === 'assistant' || msg.role === 'user').length
+	const date = formatDate(new Date(pastThread.lastModified))
+	const running = isRunning === 'LLM' || isRunning === 'tool' || isRunning === 'idle'
+	const awaiting = isRunning === 'awaiting_user'
+
+	return (
+		<button
+			type='button'
+			className='vc-suggestion-card vc-thread-card'
+			onClick={() => chatThreadsService.switchToThread(pastThread.id)}
+			data-tooltip-id='void-tooltip'
+			data-tooltip-content={`${numMessages} messages · ${date}`}
+			data-tooltip-place='top'
+		>
+			{running
+				? <LoaderCircle size={14} className='vc-suggestion-icon animate-spin' />
+				: awaiting
+					? <MessageCircleQuestion size={14} className='vc-suggestion-icon' />
+					: <History size={14} className='vc-suggestion-icon' />
+			}
+			<span className='vc-suggestion-card-title vc-thread-card-title'>{title}</span>
+			<span className='vc-thread-card-meta'>
+				<span className='vc-thread-card-count'>{numMessages}</span>
+				<span className='vc-thread-card-dot' aria-hidden>·</span>
+				<span className='vc-thread-card-date'>{date}</span>
+			</span>
+		</button>
+	)
 }

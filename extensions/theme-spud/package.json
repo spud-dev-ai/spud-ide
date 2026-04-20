@@ -42,8 +42,6 @@
       "editor.guides.indentation": true,
       "editor.smoothScrolling": true,
       "editor.fontLigatures": true,
-      "window.titleBarStyle": "custom",
-      "window.customTitleBarVisibility": "auto",
       "terminal.integrated.smoothScrolling": true,
       "breadcrumbs.enabled": true,
       "workbench.editor.showTabs": "multiple",

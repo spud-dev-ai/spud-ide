@@ -184,41 +184,43 @@ export class EditorGroupWatermark extends Disposable {
 			// Void - if the workbench is empty, show open
 			if (this.contextService.getWorkbenchState() === WorkbenchState.EMPTY) {
 
-				// Create a flex container for buttons with vertical direction
+				// Welcome text — centered lede above the CTAs.
+				const welcomeBlock = $('div');
+				welcomeBlock.classList.add('void-welcome-block');
+				voidIconBox.appendChild(welcomeBlock);
+
+				const welcomeTitle = $('div');
+				welcomeTitle.classList.add('void-welcome-title');
+				welcomeTitle.textContent = 'Welcome to Spud';
+				welcomeBlock.appendChild(welcomeTitle);
+
+				const welcomeSub = $('div');
+				welcomeSub.classList.add('void-welcome-sub');
+				welcomeSub.textContent = 'Open a project or connect to a remote host to get started.';
+				welcomeBlock.appendChild(welcomeSub);
+
+				// Vertical stack of CTAs beneath the welcome block. All sizing / colors
+				// live in void.css (.void-openfolder-button / .void-openssh-button).
 				const buttonContainer = $('div');
-				buttonContainer.style.display = 'flex';
-				buttonContainer.style.flexDirection = 'column'; // Change to column for vertical stacking
-				buttonContainer.style.alignItems = 'center'; // Center the buttons horizontally
-				buttonContainer.style.gap = '8px'; // Reduce gap between buttons from 16px to 8px
-				buttonContainer.style.marginBottom = '16px';
+				buttonContainer.classList.add('void-welcome-actions');
 				voidIconBox.appendChild(buttonContainer);
 
-				// Open a folder
-				const openFolderButton = h('button')
-				openFolderButton.root.classList.add('void-openfolder-button')
-				openFolderButton.root.style.display = 'block'
-				openFolderButton.root.style.width = '124px' // Set width to 124px as requested
-				openFolderButton.root.textContent = 'Open Folder'
+				// Primary CTA — Open folder
+				const openFolderButton = h('button');
+				openFolderButton.root.classList.add('void-openfolder-button');
+				openFolderButton.root.textContent = 'Open Folder';
 				openFolderButton.root.onclick = () => {
-					this.commandService.executeCommand(isMacintosh && isNative ? OpenFileFolderAction.ID : OpenFolderAction.ID)
-					// if (this.contextKeyService.contextMatchesRules(ContextKeyExpr.and(WorkbenchStateContext.isEqualTo('workspace')))) {
-					// 	this.commandService.executeCommand(OpenFolderViaWorkspaceAction.ID);
-					// } else {
-					// 	this.commandService.executeCommand(isMacintosh ? 'workbench.action.files.openFileFolder' : 'workbench.action.files.openFolder');
-					// }
-				}
+					this.commandService.executeCommand(isMacintosh && isNative ? OpenFileFolderAction.ID : OpenFolderAction.ID);
+				};
 				buttonContainer.appendChild(openFolderButton.root);
 
-				// Open SSH button
-				const openSSHButton = h('button')
-				openSSHButton.root.classList.add('void-openssh-button')
-				openSSHButton.root.style.display = 'block'
-				openSSHButton.root.style.backgroundColor = '#5a5a5a' // Made darker than the default gray
-				openSSHButton.root.style.width = '124px' // Set width to 124px as requested
-				openSSHButton.root.textContent = 'Open SSH'
+				// Secondary CTA — Open SSH / remote host
+				const openSSHButton = h('button');
+				openSSHButton.root.classList.add('void-openssh-button');
+				openSSHButton.root.textContent = 'Open SSH';
 				openSSHButton.root.onclick = () => {
 					this.viewsService.openViewContainer(REMOTE_EXPLORER_VIEWLET_ID);
-				}
+				};
 				buttonContainer.appendChild(openSSHButton.root);
 
 

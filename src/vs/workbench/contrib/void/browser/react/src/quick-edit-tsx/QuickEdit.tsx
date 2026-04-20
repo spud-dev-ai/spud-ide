@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------*/
 
 import React, { useEffect, useState } from 'react'
-import { useIsDark } from '../util/services.js'
+import { useIsDark, useSettingsState } from '../util/services.js'
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js'
 import { QuickEditChat } from './QuickEditChat.js'
 import { QuickEditPropsType } from '../../../quickEditActions.js'
@@ -12,8 +12,10 @@ import { QuickEditPropsType } from '../../../quickEditActions.js'
 export const QuickEdit = (props: QuickEditPropsType) => {
 
 	const isDark = useIsDark()
+	const { globalSettings } = useSettingsState()
+	const enhanceDark = isDark && globalSettings.enhanceBuiltinDarkChrome
 
-	return <div className={`@@void-scope ${isDark ? 'dark' : ''}`}>
+	return <div className={`@@void-scope ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`}>
 		<ErrorBoundary>
 			<QuickEditChat {...props} />
 		</ErrorBoundary>

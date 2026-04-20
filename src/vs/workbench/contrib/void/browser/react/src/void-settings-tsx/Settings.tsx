@@ -23,6 +23,7 @@ import { MCPServer } from '../../../../common/mcpServiceTypes.js';
 import { useMCPServiceState } from '../util/services.js';
 import { OPT_OUT_KEY } from '../../../../common/storageKeys.js';
 import { StorageScope, StorageTarget } from '../../../../../../../platform/storage/common/storage.js';
+import { fetchSpudCloudSession, trimTrailingSlash } from '../util/spudCloudApi.js';
 
 type Tab =
 	| 'models'
@@ -1076,6 +1077,70 @@ const MCPServersList = () => {
 	return <div className="my-2">{content}</div>
 };
 
+const SpudCloudSettingsSection = () => {
+	const accessor = useAccessor();
+	const voidSettingsService = accessor.get('IVoidSettingsService');
+	const commandService = accessor.get('ICommandService');
+	const metricsService = accessor.get('IMetricsService');
+	const voidSettingsState = useSettingsState();
+	const [testResult, setTestResult] = useState<string | null>(null);
+
+	const openDashboard = () => {
+		const b = voidSettingsState.globalSettings.spudCloudApiBase.trim() || 'https://cloud.spud.dev';
+		void commandService.executeCommand('vscode.open', URI.parse(trimTrailingSlash(b)));
+	};
+
+	const testConnection = async () => {
+		setTestResult('Testing…');
+		const r = await fetchSpudCloudSession(
+			voidSettingsState.globalSettings.spudCloudApiBase,
+			voidSettingsState.globalSettings.spudWorkspaceId,
+		);
+		if (r.ok) {
+			setTestResult(`Connected as ${r.user.name} · ${r.workspace.name}`);
+			metricsService.capture('Spud Cloud test', { ok: true });
+		} else {
+			setTestResult(r.error);
+			metricsService.capture('Spud Cloud test', { ok: false });
+		}
+	};
+
+	return (
+		<div className='max-w-[600px] mb-4'>
+			<h2 className='text-3xl mb-2'>Spud Cloud</h2>
+			<h4 className='text-void-fg-3 mb-4'>
+				Connect this IDE to the same Spud Cloud workspace as the web dashboard (usage, billing, team). Use your deployed URL or{' '}
+				<code className='text-xs'>http://localhost:8788</code> when the API runs locally.
+			</h4>
+			<div className='flex flex-col gap-3'>
+				<div>
+					<div className='text-xs text-void-fg-3 mb-1'>API base URL</div>
+					<VoidInputBox2
+						className='w-full min-h-[28px] px-2 py-1 rounded-sm'
+						initValue={voidSettingsState.globalSettings.spudCloudApiBase}
+						placeholder='https://cloud.spud.dev'
+						onChangeText={(t) => { void voidSettingsService.setGlobalSetting('spudCloudApiBase', t); }}
+					/>
+				</div>
+				<div>
+					<div className='text-xs text-void-fg-3 mb-1'>Workspace ID</div>
+					<VoidInputBox2
+						className='w-full min-h-[28px] px-2 py-1 rounded-sm'
+						initValue={voidSettingsState.globalSettings.spudWorkspaceId}
+						placeholder='ws_acme'
+						onChangeText={(t) => { void voidSettingsService.setGlobalSetting('spudWorkspaceId', t); }}
+					/>
+				</div>
+				<div className='flex flex-wrap gap-2 items-center'>
+					<VoidButtonBgDarken className='px-4 py-1' onClick={() => { void testConnection(); }}>Test connection</VoidButtonBgDarken>
+					<VoidButtonBgDarken className='px-4 py-1' onClick={openDashboard}>Open Cloud dashboard</VoidButtonBgDarken>
+					{testResult ? <span className='text-xs text-void-fg-3 max-w-md'>{testResult}</span> : null}
+				</div>
+			</div>
+		</div>
+	);
+};
+
 export const Settings = () => {
 	const isDark = useIsDark()
 	// ─── sidebar nav ──────────────────────────
@@ -1169,8 +1234,9 @@ export const Settings = () => {
 	}
 
 
+	const enhanceDark = isDark && settingsState.globalSettings.enhanceBuiltinDarkChrome
 	return (
-		<div className={`@@void-scope ${isDark ? 'dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto' }}>
+		<div className={`@@void-scope ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto' }}>
 			<div className="flex flex-col md:flex-row w-full gap-6 max-w-[900px] mx-auto mb-32" style={{ minHeight: '80vh' }}>
 				{/* ──────────────  SIDEBAR  ────────────── */}
 
@@ -1439,6 +1505,10 @@ export const Settings = () => {
 
 							{/* General section */}
 							<div className={`${shouldShowTab('general') ? `` : 'hidden'} flex flex-col gap-12`}>
+								<ErrorBoundary>
+									<SpudCloudSettingsSection />
+								</ErrorBoundary>
+
 								{/* One-Click Switch section */}
 								<div>
 									<ErrorBoundary>
@@ -1490,14 +1560,27 @@ export const Settings = () => {
 
 
 
-								{/* Appearance section — Spud Paper only, user picks light / dark */}
+								{/* Appearance — workbench theme + optional Spud Paper shortcuts + rich dark panels */}
 								<div>
 									<h2 className={`text-3xl mb-2`}>Appearance</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>{`Spud ships with a single design theme — Paper+Earth. Choose between its light and dark variants.`}</h4>
+									<h4 className={`text-void-fg-3 mb-4`}>{`Spud panels use your active VS Code color theme. The buttons below jump to Spud Paper light/dark; you can use Command Palette → Color Theme to pick any built-in dark theme instead.`}</h4>
 
 									<ErrorBoundary>
 										<AppearanceToggle />
 									</ErrorBoundary>
+
+									<div className='mt-6 max-w-lg'>
+										<h3 className='text-lg mb-1'>Rich dark panels</h3>
+										<p className='text-void-fg-3 text-sm mb-3'>{`When your theme is dark, add a bit more depth and border contrast inside Spud sidebars and quick-edit. This does not add a new theme file — it only remaps panel colors on top of your current theme’s tokens.`}</p>
+										<div className='flex items-center gap-x-2'>
+											<VoidSwitch
+												size='xs'
+												value={settingsState.globalSettings.enhanceBuiltinDarkChrome}
+												onChange={(v) => { void voidSettingsService.setGlobalSetting('enhanceBuiltinDarkChrome', v) }}
+											/>
+											<span className='text-void-fg-3 text-xs'>{settingsState.globalSettings.enhanceBuiltinDarkChrome ? 'Enabled' : 'Disabled'}</span>
+										</div>
+									</div>
 								</div>
 
 								{/* Built-in Settings section */}

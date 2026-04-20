@@ -170,27 +170,34 @@ export const useApplyStreamState = ({ applyBoxId }: { applyBoxId: string }) => {
 }
 
 
-type IndicatorColor = 'green' | 'orange' | 'dark' | 'yellow' | null
+type IndicatorColor = 'green' | 'orange' | 'red' | 'dark' | 'yellow' | null
 export const StatusIndicator = ({ indicatorColor, title, className, ...props }: { indicatorColor: IndicatorColor, title?: React.ReactNode, className?: string } & React.HTMLAttributes<HTMLDivElement>) => {
+	const indicatorStyle =
+		indicatorColor === 'dark'
+			? { backgroundColor: 'transparent', borderColor: 'var(--void-border-1)' }
+			: indicatorColor === 'red'
+				? { backgroundColor: 'var(--void-traffic-red)', borderColor: 'var(--void-traffic-red)', boxShadow: '0 0 4px rgba(248, 81, 73, 0.6)' }
+				: indicatorColor === 'orange'
+					? { backgroundColor: 'var(--void-traffic-yellow)', borderColor: 'var(--void-traffic-yellow)', boxShadow: '0 0 4px rgba(210, 153, 34, 0.6)' }
+					: indicatorColor === 'green'
+						? { backgroundColor: 'var(--void-traffic-green)', borderColor: 'var(--void-traffic-green)', boxShadow: '0 0 4px rgba(63, 185, 80, 0.6)' }
+						: indicatorColor === 'yellow'
+							? { backgroundColor: 'var(--void-traffic-yellow)', borderColor: 'var(--void-traffic-yellow)', boxShadow: '0 0 4px rgba(210, 153, 34, 0.6)' }
+							: { backgroundColor: 'var(--void-border-1)', borderColor: 'var(--void-border-1)' }
+
 	return (
 		<div className={`flex flex-row text-void-fg-3 text-xs items-center gap-1.5 ${className}`} {...props}>
 			{title && <span className='opacity-80'>{title}</span>}
 			<div
-				className={` size-1.5 rounded-full border
-					${indicatorColor === 'dark' ? 'bg-[rgba(0,0,0,0)] border-void-border-1' :
-						indicatorColor === 'orange' ? 'bg-orange-500 border-orange-500 shadow-[0_0_4px_0px_rgba(234,88,12,0.6)]' :
-							indicatorColor === 'green' ? 'bg-green-500 border-green-500 shadow-[0_0_4px_0px_rgba(22,163,74,0.6)]' :
-								indicatorColor === 'yellow' ? 'bg-yellow-500 border-yellow-500 shadow-[0_0_4px_0px_rgba(22,163,74,0.6)]' :
-									'bg-void-border-1 border-void-border-1'
-					}
-				`}
+				className='size-1.5 rounded-full border'
+				style={indicatorStyle}
 			/>
 		</div>
 	);
 };
 
 const tooltipPropsForApplyBlock = ({ tooltipName, color = undefined, position = 'top', offset = undefined }: { tooltipName: string, color?: IndicatorColor, position?: PlacesType, offset?: number }) => ({
-	'data-tooltip-id': color === 'orange' ? `void-tooltip-orange` : color === 'green' ? 'void-tooltip-green' : 'void-tooltip',
+	'data-tooltip-id': color === 'orange' ? `void-tooltip-orange` : color === 'green' ? 'void-tooltip-green' : color === 'red' ? 'void-tooltip-red' : 'void-tooltip',
 	'data-tooltip-place': position as PlacesType,
 	'data-tooltip-content': `${tooltipName}`,
 	'data-tooltip-offset': offset,

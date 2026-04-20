@@ -11,9 +11,14 @@
 		display: flex;
 		justify-content: center;
 		text-align: initial;
-		border-radius: 2px;
-		border: 1px solid var(--vscode-chat-requestBorder);
+		border-radius: 8px;
+		border: 1px solid var(--vscode-chat-requestBorder, rgba(128, 128, 128, 0.1));
 		background-color: var(--vscode-chat-requestBackground);
+		transition: border-color 200ms ease;
+	}
+
+	.chat-features-container:hover {
+		border-color: var(--vscode-chat-requestBorder, rgba(128, 128, 128, 0.18));
 	}
 }
 
@@ -47,8 +52,14 @@
 	.chat-feature-container {
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		padding: 5px 10px 5px 10px;
+		gap: 8px;
+		padding: 7px 12px;
+		border-radius: 6px;
+		transition: background-color 150ms ease;
+	}
+
+	.chat-feature-container:hover {
+		background-color: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.06));
 	}
 
 	.chat-feature-container .codicon[class*='codicon-'] {

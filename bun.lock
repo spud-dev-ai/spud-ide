@@ -19,7 +19,7 @@
         "@vscode/iconv-lite-umd": "0.7.0",
         "@vscode/proxy-agent": "^0.32.0",
         "@vscode/ripgrep": "^1.15.11",
-        "@vscode/spdlog": "^0.15.0",
+        "@vscode/spdlog": "0.15.8",
         "@vscode/sqlite3": "5.1.8-vscode",
         "@vscode/sudo-prompt": "9.3.1",
         "@vscode/tree-sitter-wasm": "^0.1.4",
@@ -745,7 +745,7 @@
 
     "@vscode/ripgrep": ["@vscode/ripgrep@1.15.11", "", { "dependencies": { "https-proxy-agent": "^7.0.2", "proxy-from-env": "^1.1.0", "yauzl": "^2.9.2" } }, "sha512-G/VqtA6kR50mJkIH4WA+I2Q78V5blovgPPq0VPYM0QIRp57lYMkdV+U9VrY80b3AvaC72A1z8STmyxc8ZKiTsw=="],
 
-    "@vscode/spdlog": ["@vscode/spdlog@0.15.1", "", { "dependencies": { "bindings": "^1.5.0", "mkdirp": "^1.0.4", "node-addon-api": "7.1.0" } }, "sha512-tVPeXmyz3/4NKqtNfNQxqcrBSSEZVIbF4lVDuDh9Nik5xhuHVceCU6cTpwmJ6yVBs+jv51SGF622txOQv95sZA=="],
+    "@vscode/spdlog": ["@vscode/spdlog@0.15.8", "", { "dependencies": { "bindings": "^1.5.0", "mkdirp": "^1.0.4", "node-addon-api": "7.1.0" } }, "sha512-Jh8M6b2vJfBmQua9aAiYa9sdd/htw+/71b7GZlI3v2DGbsAXIYo7gIokrfx1/0XtQPTPoJ8RKtQ9hNSPlnfXUQ=="],
 
     "@vscode/sqlite3": ["@vscode/sqlite3@5.1.8-vscode", "", { "dependencies": { "node-addon-api": "^8.2.0", "tar": "^6.1.11" } }, "sha512-9Ku18yZej1kxS7mh6dhCWxkCof043HljcLIdq+RRJr65QdOeAqPOUJ2i6qXRL63l1Kd72uXV/zLA2SBwhfgiOw=="],
 
