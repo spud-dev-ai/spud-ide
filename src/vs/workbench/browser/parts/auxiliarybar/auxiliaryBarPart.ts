@@ -141,7 +141,8 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	private resolveConfiguration(): IAuxiliaryBarPartConfiguration {
 		const position = this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION);
 
-		const canShowLabels = position !== ActivityBarPosition.TOP; // otherwise labels would repeat vertically
+		// Match VS Code: when the activity bar is top/bottom, the secondary bar uses the same strip style (icons).
+		const canShowLabels = position !== ActivityBarPosition.TOP && position !== ActivityBarPosition.BOTTOM;
 		const showLabels = canShowLabels && this.configurationService.getValue('workbench.secondarySideBar.showLabels') !== false;
 
 		return { position, canShowLabels, showLabels };
@@ -239,18 +240,20 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	}
 
 	protected shouldShowCompositeBar(): boolean {
-		// Spud: the secondary side bar (e.g. Chat vs History) must keep its top icon row even when
-		// workbench.activityBar.location is "hidden"; that setting only targets the primary bar.
-		return true;
+		return this.configuration.position !== ActivityBarPosition.HIDDEN;
 	}
 
 	protected getCompositeBarPosition(): CompositeBarPosition {
-		// Spud: always render the auxiliary bar's composite bar inside the
-		// title row. This collapses the separate cube/viewlet switcher row
-		// and the "CHAT" title row into a single header so users only see
-		// one bar in the chat panel, regardless of the global activity-bar
-		// location preference.
-		return CompositeBarPosition.TITLE;
+		switch (this.configuration.position) {
+			case ActivityBarPosition.TOP:
+				return CompositeBarPosition.TOP;
+			case ActivityBarPosition.BOTTOM:
+				return CompositeBarPosition.BOTTOM;
+			case ActivityBarPosition.HIDDEN:
+			case ActivityBarPosition.DEFAULT:
+			default:
+				return CompositeBarPosition.TITLE;
+		}
 	}
 
 	protected override createHeaderArea() {
