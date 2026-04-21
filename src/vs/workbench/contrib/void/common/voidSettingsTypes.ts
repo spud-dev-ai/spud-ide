@@ -474,7 +474,7 @@ export const defaultGlobalSettings: GlobalSettings = {
 	isOnboardingComplete: false,
 	disableSystemMessage: false,
 	autoAcceptLLMChanges: false,
-	enhanceBuiltinDarkChrome: true,
+	enhanceBuiltinDarkChrome: false,
 	spudCloudApiBase: 'https://cloud.spud.dev',
 	spudWorkspaceId: 'ws_acme',
 }

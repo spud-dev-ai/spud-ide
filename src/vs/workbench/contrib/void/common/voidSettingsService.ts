@@ -293,7 +293,7 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 			// add autoAcceptLLMChanges feature
 			if (readS.globalSettings.autoAcceptLLMChanges === undefined) readS.globalSettings.autoAcceptLLMChanges = false;
 
-			if (readS.globalSettings.enhanceBuiltinDarkChrome === undefined) readS.globalSettings.enhanceBuiltinDarkChrome = true;
+			if (readS.globalSettings.enhanceBuiltinDarkChrome === undefined) readS.globalSettings.enhanceBuiltinDarkChrome = false;
 		}
 		catch (e) {
 			readS = defaultState()

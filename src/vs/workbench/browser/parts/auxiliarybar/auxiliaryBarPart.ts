@@ -52,7 +52,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	static readonly viewContainersWorkspaceStateKey = 'workbench.auxiliarybar.viewContainersWorkspaceState';
 
 	// Use the side bar dimensions
-	override readonly minimumWidth: number = 280; // Void changed this (was 170)
+	override readonly minimumWidth: number = 170;
 	override readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 	override readonly minimumHeight: number = 0;
 	override readonly maximumHeight: number = Number.POSITIVE_INFINITY;
@@ -141,7 +141,6 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	private resolveConfiguration(): IAuxiliaryBarPartConfiguration {
 		const position = this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION);
 
-		// Match VS Code: when the activity bar is top/bottom, the secondary bar uses the same strip style (icons).
 		const canShowLabels = position !== ActivityBarPosition.TOP && position !== ActivityBarPosition.BOTTOM;
 		const showLabels = canShowLabels && this.configurationService.getValue('workbench.secondarySideBar.showLabels') !== false;
 
@@ -240,20 +239,15 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	}
 
 	protected shouldShowCompositeBar(): boolean {
-		return this.configuration.position !== ActivityBarPosition.HIDDEN;
+		// Spud: keep Chat / History / Spud settings visible in the secondary bar even when
+		// workbench.activityBar.location is "hidden" (that setting targets the primary bar only).
+		return true;
 	}
 
 	protected getCompositeBarPosition(): CompositeBarPosition {
-		switch (this.configuration.position) {
-			case ActivityBarPosition.TOP:
-				return CompositeBarPosition.TOP;
-			case ActivityBarPosition.BOTTOM:
-				return CompositeBarPosition.BOTTOM;
-			case ActivityBarPosition.HIDDEN:
-			case ActivityBarPosition.DEFAULT:
-			default:
-				return CompositeBarPosition.TITLE;
-		}
+		// Spud: always merge the view-container switcher into the title row so the panel shows
+		// a single header (icons + view title) instead of a separate top strip for Chat/History/Settings.
+		return CompositeBarPosition.TITLE;
 	}
 
 	protected override createHeaderArea() {
