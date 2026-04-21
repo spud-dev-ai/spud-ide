@@ -453,3 +453,13 @@
 	border-radius: 16px;
 	text-align: center;
 }
+
+/*--------------------------------------------------------------------------------------
+ * Spud: rounded top corners on the main title bar part only (not auxiliary editor title bars).
+ * Do not set overflow here — `.monaco-workbench .part` already clips; an extra overflow on
+ * this flex row caused the title bar to fail to paint in some builds.
+ *--------------------------------------------------------------------------------------*/
+.monaco-workbench .part.titlebar[id="workbench.parts.titlebar"] {
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+}

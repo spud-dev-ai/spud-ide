@@ -373,6 +373,13 @@ export function shouldShowCustomTitleBar(configurationService: IConfigurationSer
 		return true;
 	}
 
+	// Spud: web uses compact menubar by default; upstream treated the title bar as
+	// "empty" and hid the entire custom title row. Always show it for the in-browser
+	// workbench so command center / window controls remain reachable.
+	if (isWeb) {
+		return true;
+	}
+
 	// remaining behavior is based on menubar visibility
 	const menuBarVisibility = !isAuxiliaryWindow(window) ? getMenuBarVisibility(configurationService) : 'hidden';
 	switch (menuBarVisibility) {
@@ -386,14 +393,16 @@ export function shouldShowCustomTitleBar(configurationService: IConfigurationSer
 		case 'visible':
 			return true;
 		default:
-			return isWeb ? false : !inFullscreen || !!menuBarToggled;
+			return !inFullscreen || !!menuBarToggled;
 	}
 }
 
 function isTitleBarEmpty(configurationService: IConfigurationService): boolean {
 
-	// with the command center enabled, we should always show
-	if (configurationService.getValue<boolean>(LayoutSettings.COMMAND_CENTER)) {
+	// With the command center enabled (default), always show — use `!== false` so
+	// unset/undefined matches default `true` (same as BrowserTitlebarPart.isCommandCenterVisible).
+	// A truthy-only check hid the custom title bar when the value was still undefined.
+	if (configurationService.getValue<boolean>(LayoutSettings.COMMAND_CENTER) !== false) {
 		return false;
 	}
 

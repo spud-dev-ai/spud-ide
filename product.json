@@ -56,7 +56,8 @@
   "quality": "stable",
   "configurationDefaults": {
     "workbench.activityBar.location": "default",
-    "workbench.layoutControl.type": "toggles"
+    "workbench.layoutControl.type": "toggles",
+    "window.commandCenter": true
   },
   "extensionAllowedBadgeProviders": [
     "api.bintray.com",

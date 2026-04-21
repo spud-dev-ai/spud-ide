@@ -3,12 +3,12 @@
  *  Licensed under the Apache License, Version 2.0. See LICENSE.txt for more information.
  *--------------------------------------------------------------------------------------*/
 
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'; // Added useRef import just in case it was missed, though likely already present
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react'; // Added useRef import just in case it was missed, though likely already present
 import { ProviderName, SettingName, displayInfoOfSettingName, providerNames, VoidStatefulModelInfo, customSettingNamesOfProvider, RefreshableProviderName, refreshableProviderNames, displayInfoOfProviderName, nonlocalProviderNames, localProviderNames, GlobalSettingName, featureNames, displayInfoOfFeatureName, isProviderNameDisabled, FeatureName, hasDownloadButtonsOnModelsProviderNames, subTextMdOfProviderName } from '../../../../common/voidSettingsTypes.js'
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js'
 import { VoidButtonBgDarken, VoidCustomDropdownBox, VoidInputBox2, VoidSimpleInputBox, VoidSwitch } from '../util/inputs.js'
 import { useAccessor, useIsDark, useIsOptedOut, useRefreshModelListener, useRefreshModelState, useSettingsState } from '../util/services.js'
-import { X, RefreshCw, Loader2, Check, Asterisk, Plus, Sun, Moon } from 'lucide-react'
+import { X, RefreshCw, Loader2, Check, Asterisk, Plus, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { URI } from '../../../../../../../base/common/uri.js'
 import { ModelDropdown } from './ModelDropdown.js'
 import { ChatMarkdownRender } from '../markdown/ChatMarkdownRender.js'
@@ -27,8 +27,6 @@ import { fetchSpudCloudSession, trimTrailingSlash } from '../util/spudCloudApi.j
 
 type Tab =
 	| 'models'
-	| 'localProviders'
-	| 'providers'
 	| 'featureOptions'
 	| 'mcp'
 	| 'general'
@@ -46,6 +44,54 @@ const SettingsSectionCard = ({ children, className }: { children: React.ReactNod
 		{children}
 	</section>
 )
+
+const settingsCollapsibleChevronClass = 'mt-0.5 size-[18px] shrink-0 text-void-fg-3 transition-transform duration-200 ease-out'
+
+const SettingsCollapsibleSection = ({
+	sectionId,
+	open,
+	onToggle,
+	title,
+	headerAside,
+	children,
+}: {
+	sectionId: string
+	open: boolean
+	onToggle: () => void
+	title: React.ReactNode
+	headerAside?: React.ReactNode
+	children: React.ReactNode
+}) => {
+	const triggerId = `${sectionId}-trigger`
+	const panelId = `${sectionId}-panel`
+	return (
+		<>
+			<div className={`flex flex-wrap items-start justify-between gap-2 sm:gap-3 ${open ? 'mb-4 sm:mb-5' : ''}`}>
+				<button
+					type="button"
+					id={triggerId}
+					className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left text-void-fg-1 outline-none transition-colors hover:bg-void-bg-2/40 focus-visible:ring-2 focus-visible:ring-[#007FD4]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--vscode-sideBar-background)]"
+					onClick={onToggle}
+					aria-expanded={open}
+					aria-controls={panelId}
+				>
+					<ChevronDown className={`${settingsCollapsibleChevronClass} ${open ? 'rotate-0' : '-rotate-90'}`} aria-hidden />
+					<span className="min-w-0 flex-1">{title}</span>
+				</button>
+				{headerAside ?
+					<div className="shrink-0 sm:mt-0.5">
+						{headerAside}
+					</div> :
+					null}
+			</div>
+			{open ?
+				<div id={panelId} role="region" aria-labelledby={triggerId}>
+					{children}
+				</div> :
+				null}
+		</>
+	)
+}
 
 const SPUD_LIGHT_THEME_ID = 'Spud Paper'
 const SPUD_DARK_THEME_ID = 'Spud Paper Dark'
@@ -135,8 +181,10 @@ const RefreshModelButton = ({ providerName }: { providerName: RefreshableProvide
 
 		leftButton={
 			<button
-				className='flex items-center'
+				type="button"
+				className="vc-settings-nav-arrow"
 				disabled={state === 'refreshing' || justFinished !== null}
+				aria-label={`Refresh ${providerTitle} models`}
 				onClick={() => {
 					refreshModelService.startRefreshingModels(providerName, { enableProviderOnSuccess: false, doNotFire: false })
 					metricsService.capture('Click', { providerName, action: 'Refresh Models' })
@@ -196,9 +244,7 @@ export const AnimatedCheckmarkButton = ({ text, className }: { text?: string, cl
 	}, []);
 
 	return <div
-		className={`flex items-center gap-1.5 w-fit
-			${className ? className : `px-2 py-0.5 text-xs text-zinc-900 bg-zinc-100 rounded-sm`}
-		`}
+		className={className ?? 'flex items-center gap-1.5 w-fit px-2 py-0.5 text-xs text-zinc-900 bg-zinc-100 rounded-sm'}
 	>
 		<svg className="size-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 			<path
@@ -221,8 +267,9 @@ export const AnimatedCheckmarkButton = ({ text, className }: { text?: string, cl
 const AddButton = ({ disabled, text = 'Add', ...props }: { disabled?: boolean, text?: React.ReactNode } & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
 
 	return <button
+		type="button"
 		disabled={disabled}
-		className={`bg-[#0e70c0] px-3 py-1 text-white rounded-sm ${!disabled ? 'hover:bg-[#1177cb] cursor-pointer' : 'opacity-50 cursor-not-allowed bg-opacity-70'}`}
+		className="vc-settings-btn vc-settings-btn--primary"
 		{...props}
 	>{text}</button>
 
@@ -372,10 +419,12 @@ const SimpleModelSettingsDialog = ({
 						Change Defaults for {modelName} ({displayInfoOfProviderName(providerName).title})
 					</h3>
 					<button
+						type="button"
 						onClick={onClose}
-						className="text-void-fg-3 hover:text-void-fg-1"
+						className="vc-settings-nav-arrow"
+						aria-label="Close"
 					>
-						<X className="size-5" />
+						<X className="size-4" />
 					</button>
 				</div>
 
@@ -413,13 +462,10 @@ const SimpleModelSettingsDialog = ({
 
 
 				<div className="flex justify-end gap-2 mt-4">
-					<VoidButtonBgDarken onClick={onClose} className="px-3 py-1">
+					<VoidButtonBgDarken onClick={onClose}>
 						Cancel
 					</VoidButtonBgDarken>
-					<VoidButtonBgDarken
-						onClick={onSave}
-						className="px-3 py-1 bg-[#0e70c0] text-white"
-					>
+					<VoidButtonBgDarken primary onClick={onSave}>
 						Save
 					</VoidButtonBgDarken>
 				</div>
@@ -449,6 +495,8 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 	const [userChosenProviderName, setUserChosenProviderName] = useState<ProviderName | null>(null);
 	const [modelName, setModelName] = useState<string>('');
 	const [errorString, setErrorString] = useState('');
+	/** Per-provider model list: collapsed by default */
+	const [providerDumpExpanded, setProviderDumpExpanded] = useState<Partial<Record<ProviderName, boolean>>>({});
 
 	// a dump of all the enabled providers' models
 	const modelDump: (VoidStatefulModelInfo & { providerName: ProviderName, providerEnabled: boolean })[] = []
@@ -575,34 +623,59 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 		)
 	}
 
+	const toggleProviderDump = (pn: ProviderName) => {
+		setProviderDumpExpanded((prev) => ({ ...prev, [pn]: !(prev[pn] === true) }));
+	};
+
 	return <div className="space-y-3">
-		{modelGroups.map(({ providerName, models }) => (
+		{modelGroups.map(({ providerName, models }) => {
+			const expanded = providerDumpExpanded[providerName] === true;
+			const panelId = `model-dump-${providerName}`;
+			const triggerId = `${panelId}-trigger`;
+			return (
 			<div
 				key={providerName}
 				className="overflow-hidden rounded-lg border border-void-border-3/90 bg-void-bg-1/70 dark:bg-void-bg-1/25"
 				style={{ borderColor: 'var(--vscode-widget-border, rgba(0, 0, 0, 0.12))' }}
 			>
-				<div
-					className="border-b px-3 py-2 sm:px-4"
+				<button
+					type="button"
+					id={triggerId}
+					className="flex w-full items-center justify-between gap-2 border-b px-3 py-2.5 text-left transition-colors hover:bg-void-bg-2/55 sm:px-4"
 					style={{
 						borderColor: 'var(--vscode-widget-border, rgba(0, 0, 0, 0.08))',
 						background: 'color-mix(in oklab, var(--vscode-sideBar-background) 75%, transparent)',
 					}}
+					aria-expanded={expanded}
+					aria-controls={panelId}
+					onClick={() => { toggleProviderDump(providerName); }}
 				>
-					<span className="text-[11px] font-semibold uppercase tracking-wide text-void-fg-3">
-						{displayInfoOfProviderName(providerName).title}
+					<span className="flex min-w-0 flex-1 items-center gap-2">
+						<ChevronDown
+							className={`${settingsCollapsibleChevronClass} ${expanded ? 'rotate-0' : '-rotate-90'}`}
+							aria-hidden
+						/>
+						<span className="truncate text-[11px] font-semibold uppercase tracking-wide text-void-fg-3">
+							{displayInfoOfProviderName(providerName).title}
+						</span>
 					</span>
-				</div>
-				<div className="divide-y divide-void-border-3/60">
-					{models.map((m) => renderModelRow(m))}
-				</div>
+					<span className="shrink-0 rounded-md bg-void-bg-2/80 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-void-fg-3" title={`${models.length} model${models.length === 1 ? '' : 's'}`}>
+						{models.length}
+					</span>
+				</button>
+				{expanded ?
+					<div id={panelId} role="region" aria-labelledby={triggerId} className="divide-y divide-void-border-3/60">
+						{models.map((m) => renderModelRow(m))}
+					</div> :
+					null}
 			</div>
-		))}
+			);
+		})}
 
 		{/* Add Model Section */}
 		{showCheckmark ? (
 			<div className="mt-4">
-				<AnimatedCheckmarkButton text='Added' className="bg-[#0e70c0] text-white px-3 py-1 rounded-sm" />
+				<AnimatedCheckmarkButton text='Added' className="vc-settings-btn vc-settings-btn--primary pointer-events-none" />
 			</div>
 		) : isAddModelOpen ? (
 			<div className="mt-4">
@@ -664,15 +737,14 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 				)}
 			</div>
 		) : (
-			<div
-				className="text-void-fg-4 flex flex-nowrap text-nowrap items-center hover:brightness-110 cursor-pointer mt-4"
+			<button
+				type="button"
+				className="vc-settings-btn mt-4 max-w-full gap-1.5"
 				onClick={() => setIsAddModelOpen(true)}
 			>
-				<div className="flex items-center gap-1">
-					<Plus size={16} />
-					<span>Add a model</span>
-				</div>
-			</div>
+				<Plus size={16} className="shrink-0" />
+				<span>Add a model</span>
+			</button>
 		)}
 
 		{/* Model Settings Dialog */}
@@ -985,10 +1057,10 @@ export const OneClickSwitchButton = ({ fromEditor = 'VS Code', className = '' }:
 	}
 
 	return <>
-		<VoidButtonBgDarken className={`max-w-48 p-4 ${className}`} disabled={transferState.type !== 'done'} onClick={onClick}>
+		<VoidButtonBgDarken className={`max-w-48 min-h-[52px] px-6 py-4 ${className}`} disabled={transferState.type !== 'done'} onClick={onClick}>
 			{transferState.type === 'done' ? `Transfer from ${fromEditor}`
 				: transferState.type === 'loading' ? <span className='text-nowrap flex flex-nowrap'>Transferring<IconLoading /></span>
-					: transferState.type === 'justfinished' ? <AnimatedCheckmarkButton text='Settings Transferred' className='bg-none' />
+					: transferState.type === 'justfinished' ? <AnimatedCheckmarkButton text='Settings Transferred' className="flex items-center gap-1.5 border-0 bg-transparent p-0 text-inherit shadow-none min-h-0" />
 						: null
 			}
 		</VoidButtonBgDarken>
@@ -1107,7 +1179,7 @@ const MCPServersList = () => {
 	return <div className="my-2">{content}</div>
 };
 
-const SpudCloudSettingsSection = () => {
+const ProfileSettingsSection = () => {
 	const accessor = useAccessor();
 	const voidSettingsService = accessor.get('IVoidSettingsService');
 	const commandService = accessor.get('ICommandService');
@@ -1128,21 +1200,22 @@ const SpudCloudSettingsSection = () => {
 		);
 		if (r.ok) {
 			setTestResult(`Connected as ${r.user.name} · ${r.workspace.name}`);
-			metricsService.capture('Spud Cloud test', { ok: true });
+			metricsService.capture('Profile Spud Cloud test', { ok: true });
 		} else {
 			setTestResult(r.error);
-			metricsService.capture('Spud Cloud test', { ok: false });
+			metricsService.capture('Profile Spud Cloud test', { ok: false });
 		}
 	};
 
 	return (
-		<div className='max-w-[min(100%,36rem)] mb-4 sm:mb-6'>
-			<h2 className={settingsSectionTitleClass}>Spud Cloud</h2>
+		<div className='max-w-[min(100%,36rem)]'>
+			<h2 className={settingsSectionTitleClass}>Profile</h2>
 			<h4 className={settingsSectionLeadClass}>
-				Connect this IDE to the same Spud Cloud workspace as the web dashboard (usage, billing, team). Use your deployed URL or{' '}
+				Your Spud Cloud profile links this install to the same workspace as the web dashboard—so usage, billing, and team context stay aligned. Use your deployed API URL or{' '}
 				<code className='text-xs'>http://localhost:8788</code> when the API runs locally.
 			</h4>
-			<div className='flex flex-col gap-3'>
+
+			<div className='mt-5 flex flex-col gap-3'>
 				<div>
 					<div className='text-xs text-void-fg-3 mb-1'>API base URL</div>
 					<VoidInputBox2
@@ -1162,8 +1235,8 @@ const SpudCloudSettingsSection = () => {
 					/>
 				</div>
 				<div className='flex flex-wrap gap-2 items-center'>
-					<VoidButtonBgDarken className='px-4 py-1' onClick={() => { void testConnection(); }}>Test connection</VoidButtonBgDarken>
-					<VoidButtonBgDarken className='px-4 py-1' onClick={openDashboard}>Open Cloud dashboard</VoidButtonBgDarken>
+					<VoidButtonBgDarken onClick={() => { void testConnection(); }}>Test connection</VoidButtonBgDarken>
+					<VoidButtonBgDarken primary onClick={openDashboard}>Open Cloud dashboard</VoidButtonBgDarken>
 					{testResult ? <span className='text-xs text-void-fg-3 max-w-md'>{testResult}</span> : null}
 				</div>
 			</div>
@@ -1175,17 +1248,53 @@ export const Settings = () => {
 	const isDark = useIsDark()
 	// ─── sidebar nav ──────────────────────────
 	const [selectedSection, setSelectedSection] =
-		useState<Tab>('models');
+		useState<Tab>('general');
+	const [modelsSectionOpen, setModelsSectionOpen] = useState(false);
+	const [localProvidersSectionOpen, setLocalProvidersSectionOpen] = useState(false);
+	const [mainProvidersSectionOpen, setMainProvidersSectionOpen] = useState(false);
 
 	const navItems: { tab: Tab; label: string }[] = [
-		{ tab: 'models', label: 'Models' },
-		{ tab: 'localProviders', label: 'Local Providers' },
-		{ tab: 'providers', label: 'Main Providers' },
-		{ tab: 'featureOptions', label: 'Feature Options' },
 		{ tab: 'general', label: 'General' },
+		{ tab: 'models', label: 'Models & providers' },
+		{ tab: 'featureOptions', label: 'Feature Options' },
 		{ tab: 'mcp', label: 'MCP' },
 		{ tab: 'all', label: 'All Settings' },
 	];
+	const SETTINGS_NAV_SCROLL_STEP = 120;
+	const settingsNavScrollRef = useRef<HTMLDivElement>(null);
+	const [settingsNavScroll, setSettingsNavScroll] = useState({ canPrev: false, canNext: false });
+	const refreshSettingsNavScroll = useCallback(() => {
+		const el = settingsNavScrollRef.current;
+		if (!el) {
+			return;
+		}
+		const { scrollLeft, clientWidth, scrollWidth } = el;
+		setSettingsNavScroll({
+			canPrev: scrollLeft > 1,
+			canNext: scrollLeft + clientWidth < scrollWidth - 1
+		});
+	}, []);
+
+	useLayoutEffect(() => {
+		refreshSettingsNavScroll();
+		const el = settingsNavScrollRef.current;
+		if (!el) {
+			return;
+		}
+		const ro = new ResizeObserver(refreshSettingsNavScroll);
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, [refreshSettingsNavScroll]);
+
+	useLayoutEffect(() => {
+		const el = settingsNavScrollRef.current;
+		if (!el) {
+			return;
+		}
+		const active = el.querySelector('[data-settings-tab-active="true"]') as HTMLElement | null;
+		active?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		queueMicrotask(refreshSettingsNavScroll);
+	}, [selectedSection, refreshSettingsNavScroll]);
 	const shouldShowTab = (tab: Tab) => selectedSection === 'all' || selectedSection === tab;
 	const accessor = useAccessor()
 	const commandService = accessor.get('ICommandService')
@@ -1295,35 +1404,60 @@ export const Settings = () => {
 
 				<nav
 					aria-label="Settings sections"
-					className="void-vc-settings-nav sticky top-0 z-[2] shrink-0 border-b backdrop-blur-md"
+					className="vc-settings-nav sticky top-0 z-[2] shrink-0 border-b backdrop-blur-md"
 					style={{
 						borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))',
 						background: 'color-mix(in oklab, var(--vscode-sideBar-background) 90%, transparent)',
 					}}
 				>
-					<div className="mx-auto flex w-full max-w-4xl flex-nowrap items-stretch gap-1 overflow-x-auto px-3 py-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] sm:px-5">
-						{navItems.map(({ tab, label }) => (
-							<button
-								type="button"
-								key={tab}
-								onClick={() => {
-									if (tab === 'all') {
-										setSelectedSection('all');
-										window.scrollTo({ top: 0, behavior: 'smooth' });
-									} else {
-										setSelectedSection(tab);
-									}
-								}}
-								className={`
-									shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-left text-[13px] transition-colors duration-150 touch-manipulation min-h-[40px] sm:min-h-0
-									${selectedSection === tab
-									? 'bg-void-bg-2 font-medium text-void-fg-1 shadow-sm ring-1 ring-[#007FD4]/35'
-									: 'text-void-fg-2 hover:bg-void-bg-2/70 active:bg-void-bg-2'}
-								`}
-							>
-								{label}
-							</button>
-						))}
+					<div className="vc-settings-nav-row mx-auto w-full max-w-4xl px-3 py-2 sm:px-5">
+						<button
+							type="button"
+							className="vc-settings-nav-arrow"
+							disabled={!settingsNavScroll.canPrev}
+							aria-label="Scroll settings sections left"
+							onClick={() => settingsNavScrollRef.current?.scrollBy({ left: -SETTINGS_NAV_SCROLL_STEP, behavior: 'smooth' })}
+						>
+							<ChevronLeft size={14} />
+						</button>
+						<div
+							ref={settingsNavScrollRef}
+							onScroll={refreshSettingsNavScroll}
+							className="vc-settings-nav-scroll vc-scrollbar-none"
+							role="presentation"
+						>
+							{navItems.map(({ tab, label }) => {
+								const isActive = selectedSection === tab;
+								return (
+									<button
+										type="button"
+										key={tab}
+										data-settings-tab-active={isActive ? 'true' : undefined}
+										aria-current={isActive ? 'true' : undefined}
+										onClick={() => {
+											if (tab === 'all') {
+												setSelectedSection('all');
+												window.scrollTo({ top: 0, behavior: 'smooth' });
+											} else {
+												setSelectedSection(tab);
+											}
+										}}
+										className={`vc-settings-nav-tab${isActive ? ' vc-settings-nav-tab--active' : ''}`}
+									>
+										{label}
+									</button>
+								);
+							})}
+						</div>
+						<button
+							type="button"
+							className="vc-settings-nav-arrow"
+							disabled={!settingsNavScroll.canNext}
+							aria-label="Scroll settings sections right"
+							onClick={() => settingsNavScrollRef.current?.scrollBy({ left: SETTINGS_NAV_SCROLL_STEP, behavior: 'smooth' })}
+						>
+							<ChevronRight size={14} />
+						</button>
 					</div>
 				</nav>
 
@@ -1333,49 +1467,219 @@ export const Settings = () => {
 				>
 					<div className="mx-auto w-full max-w-4xl">
 						<div className="flex flex-col gap-5 sm:gap-6 lg:gap-8">
-							{/* Models section (formerly FeaturesTab) */}
+							{/* General section */}
+							<div className={`${shouldShowTab('general') ? `` : 'hidden'} flex flex-col gap-5 sm:gap-6 lg:gap-8`}>
+								<ErrorBoundary>
+									<SettingsSectionCard>
+										<ProfileSettingsSection />
+									</SettingsSectionCard>
+								</ErrorBoundary>
+
+								{/* One-Click Switch section */}
+								<SettingsSectionCard>
+									<ErrorBoundary>
+										<h2 className={settingsSectionTitleClass}>One-Click Switch</h2>
+										<h4 className={settingsSectionLeadClass}>{`Transfer your editor settings into Spud.`}</h4>
+
+										<div className='flex flex-col gap-2'>
+											<OneClickSwitchButton className='w-48' fromEditor="VS Code" />
+											<OneClickSwitchButton className='w-48' fromEditor="Cursor" />
+											<OneClickSwitchButton className='w-48' fromEditor="Windsurf" />
+										</div>
+									</ErrorBoundary>
+								</SettingsSectionCard>
+
+								{/* Import/Export section */}
+								<SettingsSectionCard>
+									<h2 className={settingsSectionTitleClass}>Import/Export</h2>
+									<h4 className={settingsSectionLeadClass}>{`Transfer Spud's settings and chats in and out of Spud.`}</h4>
+									<div className='flex flex-col gap-8'>
+										{/* Settings Subcategory */}
+										<div className='flex flex-col gap-2 max-w-48 w-full'>
+											<input key={2 * s} ref={fileInputSettingsRef} type='file' accept='.json' className='hidden' onChange={handleUpload('Settings')} />
+											<VoidButtonBgDarken className='w-full' onClick={() => { fileInputSettingsRef.current?.click() }}>
+												Import Settings
+											</VoidButtonBgDarken>
+											<VoidButtonBgDarken className='w-full' onClick={() => onDownload('Settings')}>
+												Export Settings
+											</VoidButtonBgDarken>
+											<ConfirmButton className='w-full' onConfirm={() => { voidSettingsService.resetState(); }}>
+												Reset Settings
+											</ConfirmButton>
+										</div>
+
+										{/* Chats Subcategory */}
+										<div className='flex flex-col gap-2 max-w-48 w-full'>
+											<input key={2 * s + 1} ref={fileInputChatsRef} type='file' accept='.json' className='hidden' onChange={handleUpload('Chats')} />
+											<VoidButtonBgDarken className='w-full' onClick={() => { fileInputChatsRef.current?.click() }}>
+												Import Chats
+											</VoidButtonBgDarken>
+											<VoidButtonBgDarken className='w-full' onClick={() => onDownload('Chats')}>
+												Export Chats
+											</VoidButtonBgDarken>
+											<ConfirmButton className='w-full' onConfirm={() => { chatThreadsService.resetState(); }}>
+												Reset Chats
+											</ConfirmButton>
+										</div>
+									</div>
+								</SettingsSectionCard>
+
+
+
+								{/* Appearance — workbench theme + optional Spud Paper shortcuts + rich dark panels */}
+								<SettingsSectionCard>
+									<h2 className={settingsSectionTitleClass}>Appearance</h2>
+									<h4 className={settingsSectionLeadClass}>{`Spud panels use your active VS Code color theme. The buttons below jump to Spud Paper light/dark; you can use Command Palette → Color Theme to pick any built-in dark theme instead.`}</h4>
+
+									<ErrorBoundary>
+										<AppearanceToggle />
+									</ErrorBoundary>
+
+									<div className='mt-6 max-w-lg'>
+										<h3 className='text-lg mb-1'>Rich dark panels</h3>
+										<p className='text-void-fg-3 text-sm mb-3'>{`When your theme is dark, add a bit more depth and border contrast inside Spud sidebars and quick-edit. This does not add a new theme file — it only remaps panel colors on top of your current theme’s tokens.`}</p>
+										<div className='flex items-center gap-x-2'>
+											<VoidSwitch
+												size='xs'
+												value={settingsState.globalSettings.enhanceBuiltinDarkChrome}
+												onChange={(v) => { void voidSettingsService.setGlobalSetting('enhanceBuiltinDarkChrome', v) }}
+											/>
+											<span className='text-void-fg-3 text-xs'>{settingsState.globalSettings.enhanceBuiltinDarkChrome ? 'Enabled' : 'Disabled'}</span>
+										</div>
+									</div>
+								</SettingsSectionCard>
+
+								{/* Built-in Settings section */}
+								<SettingsSectionCard>
+									<h2 className={settingsSectionTitleClass}>Built-in Settings</h2>
+									<h4 className={settingsSectionLeadClass}>{`IDE settings and keyboard settings.`}</h4>
+
+									<ErrorBoundary>
+										<div className='flex flex-col gap-2 justify-center w-full max-w-full sm:max-w-48'>
+											<VoidButtonBgDarken className='min-h-[44px] w-full touch-manipulation justify-center sm:min-h-0' onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+												General Settings
+											</VoidButtonBgDarken>
+											<VoidButtonBgDarken className='min-h-[44px] w-full touch-manipulation justify-center sm:min-h-0' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
+												Keyboard Settings
+											</VoidButtonBgDarken>
+											<VoidButtonBgDarken className='min-h-[44px] w-full touch-manipulation justify-center sm:min-h-0' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
+												Open Logs
+											</VoidButtonBgDarken>
+										</div>
+									</ErrorBoundary>
+								</SettingsSectionCard>
+
+
+								{/* Metrics section */}
+								<SettingsSectionCard className="max-w-[min(100%,36rem)]">
+									<h2 className={settingsSectionTitleClass}>Metrics</h2>
+									<h4 className={settingsSectionLeadClass}>Very basic anonymous usage tracking helps us keep Spud running smoothly. You may opt out below. Regardless of this setting, Spud never sees your code, messages, or API keys.</h4>
+
+									<div className='my-2'>
+										{/* Disable All Metrics Switch */}
+										<ErrorBoundary>
+											<div className='flex items-center gap-x-2 my-2'>
+												<VoidSwitch
+													size='xs'
+													value={isOptedOut}
+													onChange={(newVal) => {
+														storageService.store(OPT_OUT_KEY, newVal, StorageScope.APPLICATION, StorageTarget.MACHINE)
+														metricsService.capture(`Set metrics opt-out to ${newVal}`, {}) // this only fires if it's enabled, so it's fine to have here
+													}}
+												/>
+												<span className='text-void-fg-3 text-xs pointer-events-none'>{'Opt-out (requires restart)'}</span>
+											</div>
+										</ErrorBoundary>
+									</div>
+								</SettingsSectionCard>
+
+								{/* AI Instructions section */}
+								<SettingsSectionCard className="max-w-[min(100%,36rem)]">
+									<h2 className={settingsSectionTitleClass}>AI Instructions</h2>
+									<h4 className={settingsSectionLeadClass}>
+										<ChatMarkdownRender inPTag={true} string={`
+System instructions to include with all AI requests.
+Alternatively, place a \`.voidrules\` file in the root of your workspace.
+								`} chatMessageLocation={undefined} />
+									</h4>
+									<ErrorBoundary>
+										<AIInstructionsBox />
+									</ErrorBoundary>
+									{/* --- Disable System Message Toggle --- */}
+									<div className='my-4'>
+										<ErrorBoundary>
+											<div className='flex items-center gap-x-2'>
+												<VoidSwitch
+													size='xs'
+													value={!!settingsState.globalSettings.disableSystemMessage}
+													onChange={(newValue) => {
+														voidSettingsService.setGlobalSetting('disableSystemMessage', newValue);
+													}}
+												/>
+												<span className='text-void-fg-3 text-xs pointer-events-none'>
+													{'Disable system message'}
+												</span>
+											</div>
+										</ErrorBoundary>
+										<div className='text-void-fg-3 text-xs mt-1'>
+											{`When disabled, Spud will not include anything in the system message except for content you specified above.`}
+										</div>
+									</div>
+								</SettingsSectionCard>
+
+							</div>
+
+							{/* Models + local + main providers (single nav tab) */}
 							<div className={shouldShowTab('models') ? `` : 'hidden'}>
 								<ErrorBoundary>
 									<SettingsSectionCard>
-										<div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
-											<h2 className="text-xl font-semibold tracking-tight text-void-fg-1 sm:text-2xl">Models</h2>
-											<RedoOnboardingButton className="text-sm shrink-0 self-start" />
+										<div className="flex flex-col gap-5 sm:gap-6">
+										<SettingsCollapsibleSection
+											sectionId="settings-models"
+											open={modelsSectionOpen}
+											onToggle={() => { setModelsSectionOpen((v) => !v); }}
+											title={<span className="text-xl font-semibold tracking-tight text-void-fg-1 sm:text-2xl">Models</span>}
+											headerAside={<RedoOnboardingButton className="text-sm shrink-0 self-start" />}
+										>
+											<ModelDump />
+											<div
+												className="my-5 w-full border-t border-void-border-3 pt-5"
+												style={{ borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))' }}
+											/>
+											<AutoDetectLocalModelsToggle />
+											<RefreshableModels />
+										</SettingsCollapsibleSection>
+
+										<div className="border-t border-void-border-3" style={{ borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))' }} />
+
+										<SettingsCollapsibleSection
+											sectionId="settings-local-providers"
+											open={localProvidersSectionOpen}
+											onToggle={() => { setLocalProvidersSectionOpen((v) => !v); }}
+											title={<span className={settingsSectionTitleClass}>Local Providers</span>}
+										>
+											<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access any model that you host locally. We automatically detect your local models by default.`}</h3>
+
+											<div className='opacity-80 mb-4'>
+												<OllamaSetupInstructions sayWeAutoDetect={true} />
+											</div>
+
+											<VoidProviderSettings providerNames={localProviderNames} />
+										</SettingsCollapsibleSection>
+
+										<div className="border-t border-void-border-3" style={{ borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))' }} />
+
+										<SettingsCollapsibleSection
+											sectionId="settings-main-providers"
+											open={mainProvidersSectionOpen}
+											onToggle={() => { setMainProvidersSectionOpen((v) => !v); }}
+											title={<span className={settingsSectionTitleClass}>Main Providers</span>}
+										>
+											<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access models from Anthropic, OpenAI, OpenRouter, and more.`}</h3>
+
+											<VoidProviderSettings providerNames={nonlocalProviderNames} />
+										</SettingsCollapsibleSection>
 										</div>
-										<ModelDump />
-										<div
-											className="my-5 w-full border-t border-void-border-3 pt-5"
-											style={{ borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))' }}
-										/>
-										<AutoDetectLocalModelsToggle />
-										<RefreshableModels />
-									</SettingsSectionCard>
-								</ErrorBoundary>
-							</div>
-
-							{/* Local Providers section */}
-							<div className={shouldShowTab('localProviders') ? `` : 'hidden'}>
-								<ErrorBoundary>
-									<SettingsSectionCard>
-										<h2 className={settingsSectionTitleClass}>Local Providers</h2>
-										<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access any model that you host locally. We automatically detect your local models by default.`}</h3>
-
-										<div className='opacity-80 mb-4'>
-											<OllamaSetupInstructions sayWeAutoDetect={true} />
-										</div>
-
-										<VoidProviderSettings providerNames={localProviderNames} />
-									</SettingsSectionCard>
-								</ErrorBoundary>
-							</div>
-
-							{/* Main Providers section */}
-							<div className={shouldShowTab('providers') ? `` : 'hidden'}>
-								<ErrorBoundary>
-									<SettingsSectionCard>
-										<h2 className={settingsSectionTitleClass}>Main Providers</h2>
-										<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access models from Anthropic, OpenAI, OpenRouter, and more.`}</h3>
-
-										<VoidProviderSettings providerNames={nonlocalProviderNames} />
 									</SettingsSectionCard>
 								</ErrorBoundary>
 							</div>
@@ -1563,167 +1867,6 @@ export const Settings = () => {
 								</ErrorBoundary>
 							</div>
 
-							{/* General section */}
-							<div className={`${shouldShowTab('general') ? `` : 'hidden'} flex flex-col gap-5 sm:gap-6 lg:gap-8`}>
-								<ErrorBoundary>
-									<SettingsSectionCard>
-										<SpudCloudSettingsSection />
-									</SettingsSectionCard>
-								</ErrorBoundary>
-
-								{/* One-Click Switch section */}
-								<SettingsSectionCard>
-									<ErrorBoundary>
-										<h2 className={settingsSectionTitleClass}>One-Click Switch</h2>
-										<h4 className={settingsSectionLeadClass}>{`Transfer your editor settings into Spud.`}</h4>
-
-										<div className='flex flex-col gap-2'>
-											<OneClickSwitchButton className='w-48' fromEditor="VS Code" />
-											<OneClickSwitchButton className='w-48' fromEditor="Cursor" />
-											<OneClickSwitchButton className='w-48' fromEditor="Windsurf" />
-										</div>
-									</ErrorBoundary>
-								</SettingsSectionCard>
-
-								{/* Import/Export section */}
-								<SettingsSectionCard>
-									<h2 className={settingsSectionTitleClass}>Import/Export</h2>
-									<h4 className={settingsSectionLeadClass}>{`Transfer Spud's settings and chats in and out of Spud.`}</h4>
-									<div className='flex flex-col gap-8'>
-										{/* Settings Subcategory */}
-										<div className='flex flex-col gap-2 max-w-48 w-full'>
-											<input key={2 * s} ref={fileInputSettingsRef} type='file' accept='.json' className='hidden' onChange={handleUpload('Settings')} />
-											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => { fileInputSettingsRef.current?.click() }}>
-												Import Settings
-											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => onDownload('Settings')}>
-												Export Settings
-											</VoidButtonBgDarken>
-											<ConfirmButton className='px-4 py-1 w-full' onConfirm={() => { voidSettingsService.resetState(); }}>
-												Reset Settings
-											</ConfirmButton>
-										</div>
-
-										{/* Chats Subcategory */}
-										<div className='flex flex-col gap-2 max-w-48 w-full'>
-											<input key={2 * s + 1} ref={fileInputChatsRef} type='file' accept='.json' className='hidden' onChange={handleUpload('Chats')} />
-											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => { fileInputChatsRef.current?.click() }}>
-												Import Chats
-											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => onDownload('Chats')}>
-												Export Chats
-											</VoidButtonBgDarken>
-											<ConfirmButton className='px-4 py-1 w-full' onConfirm={() => { chatThreadsService.resetState(); }}>
-												Reset Chats
-											</ConfirmButton>
-										</div>
-									</div>
-								</SettingsSectionCard>
-
-
-
-								{/* Appearance — workbench theme + optional Spud Paper shortcuts + rich dark panels */}
-								<SettingsSectionCard>
-									<h2 className={settingsSectionTitleClass}>Appearance</h2>
-									<h4 className={settingsSectionLeadClass}>{`Spud panels use your active VS Code color theme. The buttons below jump to Spud Paper light/dark; you can use Command Palette → Color Theme to pick any built-in dark theme instead.`}</h4>
-
-									<ErrorBoundary>
-										<AppearanceToggle />
-									</ErrorBoundary>
-
-									<div className='mt-6 max-w-lg'>
-										<h3 className='text-lg mb-1'>Rich dark panels</h3>
-										<p className='text-void-fg-3 text-sm mb-3'>{`When your theme is dark, add a bit more depth and border contrast inside Spud sidebars and quick-edit. This does not add a new theme file — it only remaps panel colors on top of your current theme’s tokens.`}</p>
-										<div className='flex items-center gap-x-2'>
-											<VoidSwitch
-												size='xs'
-												value={settingsState.globalSettings.enhanceBuiltinDarkChrome}
-												onChange={(v) => { void voidSettingsService.setGlobalSetting('enhanceBuiltinDarkChrome', v) }}
-											/>
-											<span className='text-void-fg-3 text-xs'>{settingsState.globalSettings.enhanceBuiltinDarkChrome ? 'Enabled' : 'Disabled'}</span>
-										</div>
-									</div>
-								</SettingsSectionCard>
-
-								{/* Built-in Settings section */}
-								<SettingsSectionCard>
-									<h2 className={settingsSectionTitleClass}>Built-in Settings</h2>
-									<h4 className={settingsSectionLeadClass}>{`IDE settings and keyboard settings.`}</h4>
-
-									<ErrorBoundary>
-										<div className='flex flex-col gap-2 justify-center w-full max-w-full sm:max-w-48'>
-											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
-												General Settings
-											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
-												Keyboard Settings
-											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
-												Open Logs
-											</VoidButtonBgDarken>
-										</div>
-									</ErrorBoundary>
-								</SettingsSectionCard>
-
-
-								{/* Metrics section */}
-								<SettingsSectionCard className="max-w-[min(100%,36rem)]">
-									<h2 className={settingsSectionTitleClass}>Metrics</h2>
-									<h4 className={settingsSectionLeadClass}>Very basic anonymous usage tracking helps us keep Spud running smoothly. You may opt out below. Regardless of this setting, Spud never sees your code, messages, or API keys.</h4>
-
-									<div className='my-2'>
-										{/* Disable All Metrics Switch */}
-										<ErrorBoundary>
-											<div className='flex items-center gap-x-2 my-2'>
-												<VoidSwitch
-													size='xs'
-													value={isOptedOut}
-													onChange={(newVal) => {
-														storageService.store(OPT_OUT_KEY, newVal, StorageScope.APPLICATION, StorageTarget.MACHINE)
-														metricsService.capture(`Set metrics opt-out to ${newVal}`, {}) // this only fires if it's enabled, so it's fine to have here
-													}}
-												/>
-												<span className='text-void-fg-3 text-xs pointer-events-none'>{'Opt-out (requires restart)'}</span>
-											</div>
-										</ErrorBoundary>
-									</div>
-								</SettingsSectionCard>
-
-								{/* AI Instructions section */}
-								<SettingsSectionCard className="max-w-[min(100%,36rem)]">
-									<h2 className={settingsSectionTitleClass}>AI Instructions</h2>
-									<h4 className={settingsSectionLeadClass}>
-										<ChatMarkdownRender inPTag={true} string={`
-System instructions to include with all AI requests.
-Alternatively, place a \`.voidrules\` file in the root of your workspace.
-								`} chatMessageLocation={undefined} />
-									</h4>
-									<ErrorBoundary>
-										<AIInstructionsBox />
-									</ErrorBoundary>
-									{/* --- Disable System Message Toggle --- */}
-									<div className='my-4'>
-										<ErrorBoundary>
-											<div className='flex items-center gap-x-2'>
-												<VoidSwitch
-													size='xs'
-													value={!!settingsState.globalSettings.disableSystemMessage}
-													onChange={(newValue) => {
-														voidSettingsService.setGlobalSetting('disableSystemMessage', newValue);
-													}}
-												/>
-												<span className='text-void-fg-3 text-xs pointer-events-none'>
-													{'Disable system message'}
-												</span>
-											</div>
-										</ErrorBoundary>
-										<div className='text-void-fg-3 text-xs mt-1'>
-											{`When disabled, Spud will not include anything in the system message except for content you specified above.`}
-										</div>
-									</div>
-								</SettingsSectionCard>
-
-							</div>
 
 
 
@@ -1738,7 +1881,7 @@ Use Model Context Protocol to provide Agent mode with more tools.
 							`} chatMessageLocation={undefined} />
 										</h4>
 										<div className='my-2'>
-											<VoidButtonBgDarken className='px-4 py-1 w-full max-w-48' onClick={async () => { await mcpService.revealMCPConfigFile() }}>
+											<VoidButtonBgDarken primary className='w-full max-w-48' onClick={async () => { await mcpService.revealMCPConfigFile() }}>
 												Add MCP Server
 											</VoidButtonBgDarken>
 										</div>

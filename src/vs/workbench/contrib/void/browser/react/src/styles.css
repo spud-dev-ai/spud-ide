@@ -791,6 +791,8 @@
 }
 
 /* ---- Tabbed chat ---------------------------------------------------------
+   JSX uses `vc-*` class names (scope-tailwind adds `void-` → `void-vc-*`).
+   Do not use `void-vc-*` in TSX or you get `void-void-vc-*` and styles break.
    A horizontal row of tabs (one per open chat thread), plus a trailing "+"
    for starting a new chat. Tabs are horizontally scrollable when they
    overflow. Bar surface matches the landing dock; horizontal scrollbar is a black pill. */
@@ -912,6 +914,28 @@
 	opacity: 1;
 }
 
+.void-vc-chat-tab-new {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--void-fg-1) 5%, transparent);
+	border: 1px solid color-mix(in srgb, var(--void-border-3) 70%, transparent);
+	color: var(--void-fg-2);
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.void-vc-chat-tab-new:hover {
+	background: var(--void-bg-2-hover);
+	color: var(--void-fg-1);
+	border-color: var(--void-border-2);
+}
+
 /* Message card shell (JSX: vc-msg-bubble → void-vc-msg-bubble).
    Flat: no bg/border — content sits inline beneath the name/now line.
    The edit-affordance hover state is handled inline in JSX. */
@@ -933,17 +957,169 @@
 	scroll-behavior: smooth;
 }
 
-/* Top section tabs: horizontal scroll on small screens without layout jump */
-.void-vc-settings-nav {
-	scrollbar-width: thin;
+/* Top section tabs: prev/next arrows; inner strip keeps overflow scroll + hidden scrollbar */
+.void-vc-settings-nav-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	width: 100%;
+	min-width: 0;
 }
 
-.void-vc-settings-nav .overflow-x-auto::-webkit-scrollbar {
-	height: 4px;
+.void-vc-settings-nav-arrow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border-radius: 6px;
+	border: 1px solid color-mix(in oklab, var(--vscode-widget-border) 55%, transparent);
+	background: color-mix(in oklab, var(--vscode-sideBar-background) 88%, var(--vscode-editor-background));
+	color: var(--void-fg-2);
+	cursor: pointer;
+	transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
 
-.void-vc-settings-nav .overflow-x-auto::-webkit-scrollbar-thumb {
-	border-radius: 4px;
-	background: color-mix(in oklab, var(--vscode-scrollbarSlider-background) 80%, transparent);
+.void-vc-settings-nav-arrow:hover:not(:disabled) {
+	background: color-mix(in oklab, var(--void-bg-2) 85%, transparent);
+	color: var(--void-fg-1);
+}
+
+.void-vc-settings-nav-arrow:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.void-vc-settings-nav-scroll {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	flex-wrap: nowrap;
+	gap: 4px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Section label buttons (Models, Local Providers, …) */
+.void-vc-settings-nav-tab {
+	flex-shrink: 0;
+	white-space: nowrap;
+	border-radius: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	min-height: 40px;
+	font-size: 0.8125rem;
+	line-height: 1.25;
+	text-align: left;
+	letter-spacing: 0.01em;
+	touch-action: manipulation;
+	cursor: pointer;
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--void-fg-2);
+	transition:
+		background 0.15s ease,
+		color 0.15s ease,
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+@media (min-width: 640px) {
+	.void-vc-settings-nav-tab {
+		min-height: 0;
+	}
+}
+
+.void-vc-settings-nav-tab:hover {
+	color: var(--void-fg-1);
+	background: color-mix(in oklab, var(--void-bg-2) 78%, transparent);
+	border-color: color-mix(in oklab, var(--vscode-widget-border) 65%, transparent);
+}
+
+.void-vc-settings-nav-tab--active {
+	font-weight: 600;
+	color: var(--void-fg-1);
+	background: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 11%, var(--void-bg-2));
+	border-color: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 42%, var(--vscode-widget-border));
+	box-shadow:
+		0 1px 0 color-mix(in oklab, var(--vscode-widget-border) 50%, transparent),
+		0 0 0 1px color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 22%, transparent) inset;
+}
+
+.void-vc-settings-nav-tab:focus-visible {
+	outline: none;
+	box-shadow:
+		0 0 0 2px color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 55%, transparent),
+		0 1px 2px color-mix(in oklab, var(--vscode-widget-shadow, rgba(0, 0, 0, 0.12)) 80%, transparent);
+}
+
+.void-vc-settings-nav-tab--active:focus-visible {
+	box-shadow:
+		0 0 0 2px color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 55%, transparent),
+		0 1px 0 color-mix(in oklab, var(--vscode-widget-border) 50%, transparent),
+		0 0 0 1px color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 22%, transparent) inset;
+}
+
+/* Settings — primary/secondary actions (VoidButtonBgDarken, Add, etc.; not switches) */
+.void-vc-settings-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	min-height: 36px;
+	padding: 0.5rem 1rem;
+	border-radius: 0.5rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	line-height: 1.25;
+	border: 1px solid color-mix(in oklab, var(--vscode-widget-border) 58%, transparent);
+	background: color-mix(in oklab, var(--void-bg-2) 72%, var(--vscode-sideBar-background));
+	color: var(--void-fg-1);
+	cursor: pointer;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease,
+		box-shadow 0.15s ease,
+		color 0.15s ease;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.void-vc-settings-btn:hover:not(:disabled) {
+	background: color-mix(in oklab, var(--void-bg-2) 94%, transparent);
+	border-color: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 42%, var(--vscode-widget-border));
+}
+
+.void-vc-settings-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 45%, transparent);
+}
+
+.void-vc-settings-btn:disabled {
+	opacity: 0.42;
+	cursor: not-allowed;
+}
+
+.void-vc-settings-btn--primary {
+	font-weight: 600;
+	border-color: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 52%, var(--vscode-widget-border));
+	background: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 20%, var(--void-bg-2));
+	box-shadow:
+		0 1px 0 color-mix(in oklab, var(--vscode-widget-border) 38%, transparent),
+		inset 0 1px 0 color-mix(in oklab, var(--void-fg-1) 6%, transparent);
+}
+
+.void-vc-settings-btn--primary:hover:not(:disabled) {
+	background: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 28%, var(--void-bg-2));
+	border-color: color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 68%, var(--vscode-widget-border));
+}
+
+.void-vc-settings-btn--primary:focus-visible {
+	box-shadow:
+		0 0 0 2px color-mix(in oklab, var(--vscode-focusBorder, #007fd4) 48%, transparent),
+		0 1px 0 color-mix(in oklab, var(--vscode-widget-border) 38%, transparent);
 }
 

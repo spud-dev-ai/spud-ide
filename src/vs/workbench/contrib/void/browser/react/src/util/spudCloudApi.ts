@@ -35,7 +35,7 @@ export async function fetchSpudCloudSession(
 > {
 	const base = trimTrailingSlash(apiBase.trim());
 	if (!base) {
-		return { ok: false, error: 'Set Spud Cloud API URL in Spud settings (General).' };
+		return { ok: false, error: 'Set Spud Cloud API URL in Spud settings (General → Profile).' };
 	}
 	const sp = new URLSearchParams();
 	sp.set('workspace', workspaceId.trim() || 'ws_acme');

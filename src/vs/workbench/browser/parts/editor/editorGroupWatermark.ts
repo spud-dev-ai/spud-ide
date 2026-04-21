@@ -23,6 +23,8 @@ import { OpenFileFolderAction, OpenFolderAction } from '../../actions/workspaceA
 import { IWindowOpenable } from '../../../../platform/window/common/window.js';
 import { splitRecentLabel } from '../../../../base/common/labels.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { Codicon } from '../../../../base/common/codicons.js';
 
 /* eslint-disable */ // Void
 import { VOID_CTRL_K_ACTION_ID, VOID_CTRL_L_ACTION_ID } from '../../../contrib/void/browser/actionIDs.js';
@@ -163,9 +165,6 @@ export class EditorGroupWatermark extends Disposable {
 		this.clear();
 		const voidIconBox = append(this.shortcuts, $('.watermark-box'));
 		const recentsBox = append(this.shortcuts, $('div'));
-		recentsBox.style.display = 'flex'
-		recentsBox.style.flex = 'row'
-		recentsBox.style.justifyContent = 'center'
 
 
 		const update = async () => {
@@ -183,6 +182,8 @@ export class EditorGroupWatermark extends Disposable {
 
 			// Void - if the workbench is empty, show open
 			if (this.contextService.getWorkbenchState() === WorkbenchState.EMPTY) {
+
+				voidIconBox.classList.add('void-welcome-empty');
 
 				// Welcome text — centered lede above the CTAs.
 				const welcomeBlock = $('div');
@@ -208,7 +209,10 @@ export class EditorGroupWatermark extends Disposable {
 				// Primary CTA — Open folder
 				const openFolderButton = h('button');
 				openFolderButton.root.classList.add('void-openfolder-button');
-				openFolderButton.root.textContent = 'Open Folder';
+				const folderIcon = append(openFolderButton.root, $('span.void-welcome-btn-icon'));
+				folderIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.folderOpened));
+				const folderLabel = append(openFolderButton.root, $('span.void-welcome-btn-label'));
+				folderLabel.textContent = 'Open Folder';
 				openFolderButton.root.onclick = () => {
 					this.commandService.executeCommand(isMacintosh && isNative ? OpenFileFolderAction.ID : OpenFolderAction.ID);
 				};
@@ -217,7 +221,10 @@ export class EditorGroupWatermark extends Disposable {
 				// Secondary CTA — Open SSH / remote host
 				const openSSHButton = h('button');
 				openSSHButton.root.classList.add('void-openssh-button');
-				openSSHButton.root.textContent = 'Open SSH';
+				const remoteIcon = append(openSSHButton.root, $('span.void-welcome-btn-icon'));
+				remoteIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.remoteExplorer));
+				const remoteLabel = append(openSSHButton.root, $('span.void-welcome-btn-label'));
+				remoteLabel.textContent = 'Open SSH';
 				openSSHButton.root.onclick = () => {
 					this.viewsService.openViewContainer(REMOTE_EXPLORER_VIEWLET_ID);
 				};
@@ -227,59 +234,69 @@ export class EditorGroupWatermark extends Disposable {
 				// Recents
 				if (recentlyOpened.length !== 0) {
 
-					voidIconBox.append(
-						...recentlyOpened.map((w, i) => {
+					const recentBlock = $('div');
+					recentBlock.classList.add('void-welcome-recent-block');
+					const recentHead = $('div');
+					recentHead.classList.add('void-welcome-recent-head');
+					recentHead.textContent = 'Recent folders';
+					recentBlock.appendChild(recentHead);
 
-							let fullPath: string;
-							let windowOpenable: IWindowOpenable;
-							if (isRecentFolder(w)) {
-								windowOpenable = { folderUri: w.folderUri };
-								fullPath = w.label || this.labelService.getWorkspaceLabel(w.folderUri, { verbose: Verbosity.LONG });
-							}
-							else {
-								return null
-								// fullPath = w.label || this.labelService.getWorkspaceLabel(w.workspace, { verbose: Verbosity.LONG });
-								// windowOpenable = { workspaceUri: w.workspace.configPath };
-							}
+					const recentList = $('div');
+					recentList.classList.add('void-welcome-recent-list');
+					recentBlock.appendChild(recentList);
 
+					const links = recentlyOpened.map((w) => {
 
-							const { name, parentPath } = splitRecentLabel(fullPath);
+						let fullPath: string;
+						let windowOpenable: IWindowOpenable;
+						if (isRecentFolder(w)) {
+							windowOpenable = { folderUri: w.folderUri };
+							fullPath = w.label || this.labelService.getWorkspaceLabel(w.folderUri, { verbose: Verbosity.LONG });
+						}
+						else {
+							return null;
+						}
 
-							const linkSpan = $('span');
-							linkSpan.classList.add('void-link')
-							linkSpan.style.display = 'flex'
-							linkSpan.style.gap = '4px'
-							linkSpan.style.padding = '8px'
+						const { name, parentPath } = splitRecentLabel(fullPath);
 
-							linkSpan.addEventListener('click', e => {
-								this.hostService.openWindow([windowOpenable], {
-									forceNewWindow: e.ctrlKey || e.metaKey,
-									remoteAuthority: w.remoteAuthority || null // local window if remoteAuthority is not set or can not be deducted from the openable
-								});
-								e.preventDefault();
-								e.stopPropagation();
+						const linkSpan = $('span');
+						linkSpan.classList.add('void-link', 'void-welcome-recent-link');
+						linkSpan.style.display = 'flex';
+						linkSpan.style.gap = '4px';
+
+						linkSpan.addEventListener('click', e => {
+							this.hostService.openWindow([windowOpenable], {
+								forceNewWindow: e.ctrlKey || e.metaKey,
+								remoteAuthority: w.remoteAuthority || null // local window if remoteAuthority is not set or can not be deducted from the openable
 							});
+							e.preventDefault();
+							e.stopPropagation();
+						});
 
-							const nameSpan = $('span');
-							nameSpan.innerText = name;
-							nameSpan.title = fullPath;
-							linkSpan.appendChild(nameSpan);
+						const nameSpan = $('span');
+						nameSpan.innerText = name;
+						nameSpan.title = fullPath;
+						linkSpan.appendChild(nameSpan);
 
-							const dirSpan = $('span');
-							dirSpan.style.paddingLeft = '4px';
-							dirSpan.style.whiteSpace = 'nowrap';
-							dirSpan.style.overflow = 'hidden';
-							dirSpan.style.maxWidth = '300px';
-							dirSpan.innerText = parentPath;
-							dirSpan.title = fullPath;
+						const dirSpan = $('span');
+						dirSpan.style.paddingLeft = '4px';
+						dirSpan.style.whiteSpace = 'nowrap';
+						dirSpan.style.overflow = 'hidden';
+						dirSpan.style.maxWidth = '300px';
+						dirSpan.innerText = parentPath;
+						dirSpan.title = fullPath;
 
-							linkSpan.appendChild(dirSpan);
+						linkSpan.appendChild(dirSpan);
 
-							return linkSpan
-						})
-							.filter(v => !!v)
-							.slice(0, 5) // take 5 most recent
-					)
+						return linkSpan;
+					})
+						.filter(v => !!v)
+						.slice(0, 5);
+
+					for (const link of links) {
+						recentList.appendChild(link);
+					}
+					voidIconBox.appendChild(recentBlock);
 				}
 
 			}
