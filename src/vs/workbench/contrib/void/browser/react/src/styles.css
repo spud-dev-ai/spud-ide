@@ -580,16 +580,77 @@
 	margin: 0 2px;
 }
 
-/* Composer suggestions (inside input box, horizontally scrollable) */
+/* Composer suggestions — prev/next buttons; no visible scrollbar */
+.void-vc-composer-suggestion-bar {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 2px;
+}
+
+.void-vc-composer-suggestion-nav {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border-radius: 6px;
+	border: 1px solid color-mix(in srgb, var(--void-border-3) 70%, transparent);
+	background: color-mix(in srgb, var(--void-fg-1) 5%, transparent);
+	color: var(--void-fg-2);
+	cursor: pointer;
+	transition:
+		background 0.12s ease,
+		opacity 0.12s ease;
+}
+
+.void-vc-composer-suggestion-nav:hover:not(:disabled) {
+	background: var(--void-bg-2-hover);
+	color: var(--void-fg-1);
+}
+
+.void-vc-composer-suggestion-nav:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
 .void-vc-composer-suggestion-scroll {
 	display: flex;
 	gap: 6px;
+	flex: 1;
+	min-width: 0;
 	overflow-x: auto;
 	overflow-y: hidden;
-	padding: 2px 2px 6px;
-	margin-bottom: 2px;
-	scrollbar-width: thin;
+	padding: 2px 0 6px;
 	-webkit-overflow-scrolling: touch;
+}
+
+.void-vc-composer-suggestion-scroll::-webkit-scrollbar {
+	display: none;
+	height: 0;
+	width: 0;
+}
+
+/* Hide scrollbars on horizontal strips; keep scrollBy() working (see .void-vc-scrollbar-none on JSX). */
+.void-vc-scrollbar-none {
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+}
+
+.void-vc-scrollbar-none::-webkit-scrollbar,
+.void-vc-scrollbar-none::-webkit-scrollbar-thumb,
+.void-vc-scrollbar-none::-webkit-scrollbar-track,
+.void-vc-scrollbar-none::-webkit-scrollbar-corner {
+	display: none !important;
+	width: 0 !important;
+	height: 0 !important;
+	max-width: 0 !important;
+	max-height: 0 !important;
+	background: transparent !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
 }
 
 .void-vc-composer-suggestion-chip {
@@ -744,6 +805,34 @@
 	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--void-fg-1) 4%, transparent);
 }
 
+.void-vc-chat-tabs-nav {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border-radius: 6px;
+	border: 1px solid color-mix(in srgb, var(--void-border-3) 70%, transparent);
+	background: color-mix(in srgb, var(--void-fg-1) 5%, transparent);
+	color: var(--void-fg-2);
+	cursor: pointer;
+	transition:
+		background 0.12s ease,
+		opacity 0.12s ease;
+}
+
+.void-vc-chat-tabs-nav:hover:not(:disabled) {
+	background: var(--void-bg-2-hover);
+	color: var(--void-fg-1);
+}
+
+.void-vc-chat-tabs-nav:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
 .void-vc-chat-tabs-scroll {
 	display: flex;
 	align-items: center;
@@ -755,28 +844,12 @@
 	padding-bottom: 2px;
 	margin-bottom: -2px;
 	-webkit-overflow-scrolling: touch;
-	/* Firefox — black thumb (width is UA “thin”, not px-precise) */
-	scrollbar-width: thin;
-	scrollbar-color: #000000 rgba(0, 0, 0, 0.08);
 }
 
 .void-vc-chat-tabs-scroll::-webkit-scrollbar {
-	height: 2px;
-}
-
-.void-vc-chat-tabs-scroll::-webkit-scrollbar-track {
-	background: rgba(0, 0, 0, 0.08);
-	border-radius: 1px;
-}
-
-.void-vc-chat-tabs-scroll::-webkit-scrollbar-thumb {
-	background: #000000;
-	border-radius: 1px;
-	border: 0;
-}
-
-.void-vc-chat-tabs-scroll::-webkit-scrollbar-thumb:hover {
-	background: #000000;
+	display: none;
+	height: 0;
+	width: 0;
 }
 
 .void-vc-chat-tab {
@@ -839,28 +912,6 @@
 	opacity: 1;
 }
 
-.void-vc-chat-tab-new {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	height: 22px;
-	padding: 0;
-	border-radius: 6px;
-	background: color-mix(in srgb, var(--void-fg-1) 5%, transparent);
-	border: 1px solid color-mix(in srgb, var(--void-border-3) 70%, transparent);
-	color: var(--void-fg-2);
-	cursor: pointer;
-	flex-shrink: 0;
-	transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-}
-
-.void-vc-chat-tab-new:hover {
-	background: var(--void-bg-2-hover);
-	color: var(--void-fg-1);
-	border-color: var(--void-border-2);
-}
-
 /* Message card shell (JSX: vc-msg-bubble → void-vc-msg-bubble).
    Flat: no bg/border — content sits inline beneath the name/now line.
    The edit-affordance hover state is handled inline in JSX. */
@@ -874,3 +925,25 @@
 .void-vc-turn-row {
 	padding-bottom: 2px;
 }
+
+/* Spud Settings — fluid width, touch scrolling, notched safe areas (complements Tailwind in Settings.tsx). */
+.void-vc-settings-shell {
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-y: contain;
+	scroll-behavior: smooth;
+}
+
+/* Top section tabs: horizontal scroll on small screens without layout jump */
+.void-vc-settings-nav {
+	scrollbar-width: thin;
+}
+
+.void-vc-settings-nav .overflow-x-auto::-webkit-scrollbar {
+	height: 4px;
+}
+
+.void-vc-settings-nav .overflow-x-auto::-webkit-scrollbar-thumb {
+	border-radius: 4px;
+	background: color-mix(in oklab, var(--vscode-scrollbarSlider-background) 80%, transparent);
+}
+

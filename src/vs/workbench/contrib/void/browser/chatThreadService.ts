@@ -1654,10 +1654,13 @@ We only need to do it for files that were edited since `from`, ie files between 
 			if (remainingIds.length > 0) {
 				// stay on the most recently touched thread (matches tab UX)
 				nextCurrentId = remainingIds.sort((a, b) => {
-					const ta = new Date(newThreads[a].lastModified).getTime()
-					const tb = new Date(newThreads[b].lastModified).getTime()
+					const threadA = newThreads[a]
+					const threadB = newThreads[b]
+					if (!threadA || !threadB) return 0
+					const ta = new Date(threadA.lastModified).getTime()
+					const tb = new Date(threadB.lastModified).getTime()
 					return tb - ta
-				})[0]
+				})[0]!
 			} else {
 				// invariant: there is always a current thread (see constructor)
 				const fresh = newThreadObject()

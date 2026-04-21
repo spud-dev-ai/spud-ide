@@ -239,7 +239,9 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	}
 
 	protected shouldShowCompositeBar(): boolean {
-		return this.configuration.position !== ActivityBarPosition.HIDDEN;
+		// Spud: the secondary side bar (e.g. Chat vs History) must keep its top icon row even when
+		// workbench.activityBar.location is "hidden"; that setting only targets the primary bar.
+		return true;
 	}
 
 	protected getCompositeBarPosition(): CompositeBarPosition {

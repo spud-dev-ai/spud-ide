@@ -54,6 +54,10 @@
   "tipsAndTricksUrl": "https://go.microsoft.com/fwlink/?linkid=852118",
   "twitterUrl": "https://spud.dev",
   "quality": "stable",
+  "configurationDefaults": {
+    "workbench.activityBar.location": "default",
+    "workbench.layoutControl.type": "toggles"
+  },
   "extensionAllowedBadgeProviders": [
     "api.bintray.com",
     "api.travis-ci.com",

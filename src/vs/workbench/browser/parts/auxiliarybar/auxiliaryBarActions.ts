@@ -125,7 +125,7 @@ MenuRegistry.appendMenuItems([
 	{
 		id: MenuId.LayoutControlMenu,
 		item: {
-			group: '2_pane_toggles',
+			group: '3_layout_titlebar_secondary',
 			command: {
 				id: ToggleAuxiliaryBarAction.ID,
 				title: localize('toggleSecondarySideBar', "Toggle Void Side Bar"),
@@ -138,7 +138,7 @@ MenuRegistry.appendMenuItems([
 	}, {
 		id: MenuId.LayoutControlMenu,
 		item: {
-			group: '2_pane_toggles',
+			group: '3_layout_titlebar_secondary',
 			command: {
 				id: ToggleAuxiliaryBarAction.ID,
 				title: localize('toggleSecondarySideBar', "Toggle Void Side Bar"),
@@ -146,7 +146,7 @@ MenuRegistry.appendMenuItems([
 				icon: auxiliaryBarRightOffIcon,
 			},
 			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
-			order: 2
+			order: 0
 		}
 	}, {
 		id: MenuId.ViewContainerTitleContext,

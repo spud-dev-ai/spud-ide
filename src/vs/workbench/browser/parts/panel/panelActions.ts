@@ -316,7 +316,7 @@ MenuRegistry.appendMenuItems([
 	{
 		id: MenuId.LayoutControlMenu,
 		item: {
-			group: '2_pane_toggles',
+			group: '3_layout_titlebar_secondary',
 			command: {
 				id: TogglePanelAction.ID,
 				title: localize('togglePanel', "Toggle Panel"),
@@ -324,7 +324,7 @@ MenuRegistry.appendMenuItems([
 				toggled: { condition: PanelVisibleContext, icon: panelIcon }
 			},
 			when: ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')),
-			order: 1
+			order: 2
 		}
 	}
 ]);

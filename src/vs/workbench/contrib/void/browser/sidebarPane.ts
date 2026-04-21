@@ -34,6 +34,7 @@ import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { mountSidebar } from './react/out/sidebar-tsx/index.js';
+import { mountHistoryPanel } from './react/out/history-tsx/index.js';
 
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Orientation } from '../../../../base/browser/ui/sash/sash.js';
@@ -95,6 +96,41 @@ class SidebarViewPane extends ViewPane {
 
 
 
+class HistoryViewPane extends ViewPane {
+
+	constructor(
+		options: IViewPaneOptions,
+		@IInstantiationService instantiationService: IInstantiationService,
+		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
+		@IConfigurationService configurationService: IConfigurationService,
+		@IContextKeyService contextKeyService: IContextKeyService,
+		@IThemeService themeService: IThemeService,
+		@IContextMenuService contextMenuService: IContextMenuService,
+		@IKeybindingService keybindingService: IKeybindingService,
+		@IOpenerService openerService: IOpenerService,
+		@ITelemetryService telemetryService: ITelemetryService,
+		@IHoverService hoverService: IHoverService,
+	) {
+		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
+	}
+
+	protected override renderBody(parent: HTMLElement): void {
+		super.renderBody(parent);
+		parent.style.userSelect = 'text';
+		this.instantiationService.invokeFunction(accessor => {
+			const disposeFn: (() => void) | undefined = mountHistoryPanel(parent, accessor)?.dispose;
+			this._register(toDisposable(() => disposeFn?.()));
+		});
+	}
+
+	protected override layoutBody(height: number, width: number): void {
+		super.layoutBody(height, width);
+		this.element.style.height = `${height}px`;
+		this.element.style.width = `${width}px`;
+	}
+}
+
+
 // ---------- Register viewpane inside the void container ----------
 
 // const voidThemeIcon = Codicon.symbolObject;
@@ -104,9 +140,13 @@ class SidebarViewPane extends ViewPane {
 export const VOID_VIEW_CONTAINER_ID = 'workbench.view.void'
 export const VOID_VIEW_ID = VOID_VIEW_CONTAINER_ID
 
-// Register view container
+/** Own auxiliary icon next to Chat — browse past threads. */
+export const VOID_HISTORY_VIEW_CONTAINER_ID = 'workbench.view.void.history'
+export const VOID_HISTORY_VIEW_ID = VOID_HISTORY_VIEW_CONTAINER_ID
+
+// Register Chat view container (secondary side bar, left of the two top icons)
 const viewContainerRegistry = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry);
-const container = viewContainerRegistry.registerViewContainer({
+const voidChatContainer = viewContainerRegistry.registerViewContainer({
 	id: VOID_VIEW_CONTAINER_ID,
 	title: nls.localize2('voidContainer', 'Chat'), // this is used to say "Void" (Ctrl + L)
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [VOID_VIEW_CONTAINER_ID, {
@@ -123,29 +163,43 @@ const container = viewContainerRegistry.registerViewContainer({
 }, ViewContainerLocation.AuxiliaryBar, { doNotRegisterOpenCommand: true, isDefault: true });
 
 
+const voidHistoryContainer = viewContainerRegistry.registerViewContainer({
+	id: VOID_HISTORY_VIEW_CONTAINER_ID,
+	title: nls.localize2('voidHistoryContainer', 'History'),
+	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [VOID_HISTORY_VIEW_CONTAINER_ID, {
+		mergeViewWithContainerWhenSingleView: true,
+		orientation: Orientation.HORIZONTAL,
+	}]),
+	hideIfEmpty: false,
+	order: 2,
+	rejectAddedViews: true,
+	icon: Codicon.history,
+}, ViewContainerLocation.AuxiliaryBar, { doNotRegisterOpenCommand: true, isDefault: false });
 
-// Register search default location to the container (sidebar)
+
+// Register views
 const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
 viewsRegistry.registerViews([{
 	id: VOID_VIEW_ID,
 	hideByDefault: false, // start open
-	// containerIcon: voidViewIcon,
-	name: nls.localize2('voidChat', ''), // this says ... : CHAT
+	name: nls.localize2('voidChat', 'Chat'),
 	ctorDescriptor: new SyncDescriptor(SidebarViewPane),
 	canToggleVisibility: false,
-	canMoveView: false, // can't move this out of its container
-	weight: 80,
+	canMoveView: false,
+	weight: 100,
 	order: 1,
-	// singleViewPaneContainerTitle: 'hi',
+}], voidChatContainer);
 
-	// openCommandActionDescriptor: {
-	// 	id: VOID_VIEW_CONTAINER_ID,
-	// 	keybindings: {
-	// 		primary: KeyMod.CtrlCmd | KeyCode.KeyL,
-	// 	},
-	// 	order: 1
-	// },
-}], container);
+viewsRegistry.registerViews([{
+	id: VOID_HISTORY_VIEW_ID,
+	hideByDefault: false,
+	name: nls.localize2('voidHistory', 'History'),
+	ctorDescriptor: new SyncDescriptor(HistoryViewPane),
+	canToggleVisibility: false,
+	canMoveView: false,
+	weight: 100,
+	order: 1,
+}], voidHistoryContainer);
 
 
 // open sidebar

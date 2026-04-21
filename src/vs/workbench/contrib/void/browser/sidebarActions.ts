@@ -14,7 +14,7 @@ import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextke
 
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { IRange } from '../../../../editor/common/core/range.js';
-import { VOID_VIEW_CONTAINER_ID, VOID_VIEW_ID } from './sidebarPane.js';
+import { VOID_HISTORY_VIEW_CONTAINER_ID, VOID_VIEW_CONTAINER_ID, VOID_VIEW_ID } from './sidebarPane.js';
 import { IMetricsService } from '../common/metricsService.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { VOID_TOGGLE_SETTINGS_ACTION_ID } from './voidSettingsPane.js';
@@ -216,21 +216,10 @@ registerAction2(class extends Action2 {
 		});
 	}
 	async run(accessor: ServicesAccessor): Promise<void> {
-
-		// do not do anything if there are no messages (without this it clears all of the user's selections if the button is pressed)
-		// TODO the history button should be disabled in this case so we can remove this logic
-		const thread = accessor.get(IChatThreadService).getCurrentThread()
-		if (thread.messages.length === 0) {
-			return;
-		}
-
+		const viewsService = accessor.get(IViewsService)
 		const metricsService = accessor.get(IMetricsService)
-
-		const commandService = accessor.get(ICommandService)
-
 		metricsService.capture('Chat Navigation', { type: 'History' })
-		commandService.executeCommand(VOID_CMD_SHIFT_L_ACTION_ID)
-
+		await viewsService.openViewContainer(VOID_HISTORY_VIEW_CONTAINER_ID, true)
 	}
 })
 

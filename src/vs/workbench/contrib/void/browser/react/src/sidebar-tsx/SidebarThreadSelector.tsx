@@ -6,14 +6,13 @@
 import { useMemo, useState } from 'react';
 import { CopyButton, IconShell1 } from '../markdown/ApplyBlockHoverButtons.js';
 import { useAccessor, useChatThreadsState, useChatThreadsStreamState, useFullChatThreadsStreamState, useSettingsState } from '../util/services.js';
-import { IconX } from './SidebarChat.js';
 import { Check, Copy, History, Icon, LoaderCircle, MessageCircleQuestion, Trash2, UserCheck, X } from 'lucide-react';
 import { IsRunningType, ThreadType } from '../../../chatThreadService.js';
 
 
 const numInitialThreads = 3
 
-export const PastThreadsList = ({ className = '', variant = 'list' }: { className?: string, variant?: 'list' | 'card' }) => {
+export const PastThreadsList = ({ className = '', variant = 'list', unlimited = false }: { className?: string, variant?: 'list' | 'card', unlimited?: boolean }) => {
 	const [showAll, setShowAll] = useState(false);
 
 	const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -38,9 +37,8 @@ export const PastThreadsList = ({ className = '', variant = 'list' }: { classNam
 		.sort((threadId1, threadId2) => (allThreads[threadId1]?.lastModified ?? 0) > (allThreads[threadId2]?.lastModified ?? 0) ? -1 : 1)
 		.filter(threadId => (allThreads![threadId]?.messages.length ?? 0) !== 0)
 
-	// Get only first 5 threads if not showing all
-	const hasMoreThreads = sortedThreadIds.length > numInitialThreads;
-	const displayThreads = showAll ? sortedThreadIds : sortedThreadIds.slice(0, numInitialThreads);
+	const hasMoreThreads = !unlimited && sortedThreadIds.length > numInitialThreads;
+	const displayThreads = unlimited || showAll ? sortedThreadIds : sortedThreadIds.slice(0, numInitialThreads);
 
 	if (variant === 'card') {
 		return (

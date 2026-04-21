@@ -337,13 +337,13 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from '../common/contri
 		'properties': {
 			'security.promptForLocalFileProtocolHandling': {
 				'type': 'boolean',
-				'default': true,
+				'default': false,
 				'markdownDescription': localize('security.promptForLocalFileProtocolHandling', 'If enabled, a dialog will ask for confirmation whenever a local file or workspace is about to open through a protocol handler.'),
 				'scope': ConfigurationScope.APPLICATION
 			},
 			'security.promptForRemoteFileProtocolHandling': {
 				'type': 'boolean',
-				'default': true,
+				'default': false,
 				'markdownDescription': localize('security.promptForRemoteFileProtocolHandling', 'If enabled, a dialog will ask for confirmation whenever a remote file or workspace is about to open through a protocol handler.'),
 				'scope': ConfigurationScope.APPLICATION
 			}

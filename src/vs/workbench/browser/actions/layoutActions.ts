@@ -58,6 +58,10 @@ const fullscreenIcon = registerIcon('fullscreen', Codicon.screenFull, localize('
 const centerLayoutIcon = registerIcon('centerLayoutIcon', Codicon.layoutCentered, localize('centerLayoutIcon', "Represents centered layout mode"));
 const zenModeIcon = registerIcon('zenMode', Codicon.target, localize('zenModeIcon', "Represents zen mode"));
 
+/** Title bar layout control — tab strip visibility (left cluster with primary side bar). */
+const editorTabsHideTitleIcon = registerIcon('layout-editor-tabs-hide', Codicon.layoutSidebarLeftOff, localize('layoutControlHideTabBarIcon', "Hide tab bar"));
+const editorTabsShowTitleIcon = registerIcon('layout-editor-tabs-show', Codicon.editorLayout, localize('layoutControlShowTabBarIcon', "Show tab bar"));
+
 export const ToggleActivityBarVisibilityActionId = 'workbench.action.toggleActivityBarVisibility';
 
 // --- Toggle Centered Layout
@@ -338,7 +342,7 @@ MenuRegistry.appendMenuItems([
 	}, {
 		id: MenuId.LayoutControlMenu,
 		item: {
-			group: '2_pane_toggles',
+			group: '2_layout_titlebar_primary',
 			command: {
 				id: ToggleSidebarVisibilityAction.ID,
 				title: localize('toggleSideBar', "Toggle Primary Side Bar"),
@@ -351,7 +355,7 @@ MenuRegistry.appendMenuItems([
 	}, {
 		id: MenuId.LayoutControlMenu,
 		item: {
-			group: '2_pane_toggles',
+			group: '2_layout_titlebar_primary',
 			command: {
 				id: ToggleSidebarVisibilityAction.ID,
 				title: localize('toggleSideBar', "Toggle Primary Side Bar"),
@@ -359,7 +363,7 @@ MenuRegistry.appendMenuItems([
 				toggled: { condition: SideBarVisibleContext, icon: panelRightIcon }
 			},
 			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
-			order: 2
+			order: 0
 		}
 	}
 ]);
@@ -506,6 +510,44 @@ registerAction2(ShowMultipleEditorTabsAction);
 registerAction2(ZenShowMultipleEditorTabsAction);
 registerAction2(ShowSingleEditorTabAction);
 registerAction2(ZenShowSingleEditorTabAction);
+
+const layoutControlTogglesWhen = ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'));
+
+MenuRegistry.appendMenuItems([
+	{
+		id: MenuId.LayoutControlMenu,
+		item: {
+			group: '2_layout_titlebar_primary',
+			command: {
+				id: HideEditorTabsAction.ID,
+				title: localize2('layoutControlHideTabBarShort', 'Hide Tab Bar'),
+				icon: editorTabsHideTitleIcon,
+			},
+			when: ContextKeyExpr.and(
+				layoutControlTogglesWhen,
+				ContextKeyExpr.notEquals(`config.${LayoutSettings.EDITOR_TABS_MODE}`, EditorTabsMode.NONE),
+				InEditorZenModeContext.negate(),
+			),
+			order: 4,
+		},
+	}, {
+		id: MenuId.LayoutControlMenu,
+		item: {
+			group: '2_layout_titlebar_primary',
+			command: {
+				id: ShowMultipleEditorTabsAction.ID,
+				title: localize2('layoutControlShowTabBarShort', 'Show Tab Bar'),
+				icon: editorTabsShowTitleIcon,
+			},
+			when: ContextKeyExpr.and(
+				layoutControlTogglesWhen,
+				ContextKeyExpr.equals(`config.${LayoutSettings.EDITOR_TABS_MODE}`, EditorTabsMode.NONE),
+				InEditorZenModeContext.negate(),
+			),
+			order: 4,
+		},
+	},
+]);
 
 // --- Tab Bar Submenu in View Appearance Menu
 

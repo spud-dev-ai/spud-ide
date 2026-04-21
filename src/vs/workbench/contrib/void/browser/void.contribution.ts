@@ -61,6 +61,9 @@ import './miscWokrbenchContrib.js'
 // register Spud chrome (body-level classes for enhanced dark mode)
 import './spudChromeContrib.js'
 
+// title bar — light/dark toggle (MenuId.TitleBar)
+import './spudTitleBarActions.js'
+
 // register file service (for explorer context menu)
 import './fileService.js'
 

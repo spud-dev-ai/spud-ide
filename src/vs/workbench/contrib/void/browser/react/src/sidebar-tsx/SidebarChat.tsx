@@ -3,7 +3,7 @@
  *  Licensed under the Apache License, Version 2.0. See LICENSE.txt for more information.
  *--------------------------------------------------------------------------------------*/
 
-import React, { ButtonHTMLAttributes, FormEvent, FormHTMLAttributes, Fragment, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ButtonHTMLAttributes, FormEvent, FormHTMLAttributes, Fragment, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 
 import { useAccessor, useChatThreadsState, useChatThreadsStreamState, useSettingsState, useActiveURI, useCommandBarState, useFullChatThreadsStreamState, useIsDark, useIsWorkspaceReady } from '../util/services.js';
@@ -22,16 +22,15 @@ import { ChatMode, displayInfoOfProviderName, FeatureName, isFeatureNameDisabled
 import { ICommandService } from '../../../../../../../platform/commands/common/commands.js';
 import { WarningBox } from '../void-settings-tsx/WarningBox.js';
 import { getModelCapabilities, getIsReasoningEnabledState } from '../../../../common/modelCapabilities.js';
-import { AlertTriangle, File, Ban, Check, ChevronRight, Dot, FileIcon, Pencil, Undo, Undo2, X, Flag, Copy as CopyIcon, Info, CirclePlus, Ellipsis, CircleEllipsis, Folder, ALargeSmall, TypeOutline, Text, Sparkles, Search, Wand2, Bug, FlaskConical, BookOpen } from 'lucide-react';
+import { AlertTriangle, File, Ban, Check, ChevronLeft, ChevronRight, Dot, FileIcon, Pencil, Undo, Undo2, X, Flag, Copy as CopyIcon, Info, Ellipsis, CircleEllipsis, Folder, ALargeSmall, TypeOutline, Text, Sparkles, Search, Wand2, Bug, FlaskConical, BookOpen } from 'lucide-react';
 import { ChatMessage, CheckpointEntry, StagingSelectionItem, ToolMessage } from '../../../../common/chatThreadServiceTypes.js';
 import { approvalTypeOfBuiltinToolName, BuiltinToolCallParams, BuiltinToolName, ToolName, LintErrorItem, ToolApprovalType, toolApprovalTypes } from '../../../../common/toolsServiceTypes.js';
 import { CopyButton, EditToolAcceptRejectButtonsHTML, IconShell1, JumpToFileButton, JumpToTerminalButton, StatusIndicator, StatusIndicatorForApplyButton, useApplyStreamState, useEditToolStreamState } from '../markdown/ApplyBlockHoverButtons.js';
-import { IsRunningType } from '../../../chatThreadService.js';
+import { IsRunningType, ThreadType } from '../../../chatThreadService.js';
 import { acceptAllBg, acceptBorder, buttonFontSize, buttonTextColor, rejectAllBg, rejectBg, rejectBorder } from '../../../../common/helpers/colors.js';
 import { builtinToolNames, isABuiltinToolName, MAX_FILE_CHARS_PAGE, MAX_TERMINAL_INACTIVE_TIME } from '../../../../common/prompt/prompts.js';
 import { RawToolCallObj } from '../../../../common/sendLLMMessageTypes.js';
 import ErrorBoundary from './ErrorBoundary.js';
-import { SpudCloudBar } from './SpudCloudBar.js';
 import { ToolApprovalTypeSwitch } from '../void-settings-tsx/Settings.js';
 
 import { persistentTerminalNameOfId } from '../../../terminalToolService.js';
@@ -3033,6 +3032,77 @@ const EditToolSoFar = ({ toolCallSoFar, }: { toolCallSoFar: RawToolCallObj }) =>
 
 }
 
+const H_SCROLL_STEP = 120
+
+const ComposerSuggestionRow = ({ prompts, onPick }: { prompts: string[], onPick: (prompt: string) => void }) => {
+	const scrollRef = useRef<HTMLDivElement>(null)
+	const [canPrev, setCanPrev] = useState(false)
+	const [canNext, setCanNext] = useState(false)
+
+	const refresh = useCallback(() => {
+		const el = scrollRef.current
+		if (!el) {
+			return
+		}
+		const { scrollLeft, clientWidth, scrollWidth } = el
+		setCanPrev(scrollLeft > 1)
+		setCanNext(scrollLeft + clientWidth < scrollWidth - 1)
+	}, [])
+
+	useLayoutEffect(() => {
+		refresh()
+		const el = scrollRef.current
+		if (!el) {
+			return
+		}
+		const ro = new ResizeObserver(refresh)
+		ro.observe(el)
+		return () => ro.disconnect()
+	}, [prompts, refresh])
+
+	return (
+		<div className='vc-composer-suggestion-bar'>
+			<button
+				type='button'
+				className='vc-composer-suggestion-nav'
+				disabled={!canPrev}
+				aria-label='Previous suggestions'
+				onClick={() => scrollRef.current?.scrollBy({ left: -H_SCROLL_STEP, behavior: 'smooth' })}
+			>
+				<ChevronLeft size={14} />
+			</button>
+			<div
+				ref={scrollRef}
+				onScroll={refresh}
+				className='vc-composer-suggestion-scroll vc-scrollbar-none'
+				role='list'
+				aria-label='Suggested prompts'
+			>
+				{prompts.map((prompt, i) => (
+					<button
+						key={i}
+						type='button'
+						role='listitem'
+						className='vc-composer-suggestion-chip'
+						onClick={() => onPick(prompt)}
+					>
+						{prompt}
+					</button>
+				))}
+			</div>
+			<button
+				type='button'
+				className='vc-composer-suggestion-nav'
+				disabled={!canNext}
+				aria-label='Next suggestions'
+				onClick={() => scrollRef.current?.scrollBy({ left: H_SCROLL_STEP, behavior: 'smooth' })}
+			>
+				<ChevronRight size={14} />
+			</button>
+		</div>
+	)
+}
+
 
 export const SidebarChat = () => {
 	const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -3079,6 +3149,20 @@ export const SidebarChat = () => {
 
 	const sidebarRef = useRef<HTMLDivElement>(null)
 	const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+	const chatTabsScrollRef = useRef<HTMLDivElement>(null)
+	const [chatTabsScroll, setChatTabsScroll] = useState({ canPrev: false, canNext: false })
+
+	const refreshChatTabsScroll = useCallback(() => {
+		const el = chatTabsScrollRef.current
+		if (!el) {
+			return
+		}
+		const { scrollLeft, clientWidth, scrollWidth } = el
+		setChatTabsScroll({
+			canPrev: scrollLeft > 1,
+			canNext: scrollLeft + clientWidth < scrollWidth - 1,
+		})
+	}, [])
 	const onSubmit = useCallback(async (_forceSubmit?: string) => {
 
 		if (isDisabled && !_forceSubmit) return
@@ -3254,24 +3338,12 @@ export const SidebarChat = () => {
 		onClickAnywhere={() => { textAreaRef.current?.focus() }}
 	>
 		{showQuickPromptSuggestions ? (
-			<div className='vc-composer-suggestion-scroll' role='list' aria-label='Suggested prompts'>
-				{quickPromptSuggestions.map((prompt, i) => (
-					<button
-						key={i}
-						type='button'
-						role='listitem'
-						className='vc-composer-suggestion-chip'
-						onClick={() => onSubmit(prompt)}
-					>
-						{prompt}
-					</button>
-				))}
-			</div>
+			<ComposerSuggestionRow prompts={quickPromptSuggestions} onPick={(prompt) => onSubmit(prompt)} />
 		) : null}
 
 		<VoidInputBox2
 			enableAtToMention
-			className={`h-[28px] min-h-[28px] max-h-[28px] px-0.5 py-0.5 whitespace-nowrap overflow-x-auto overflow-y-hidden`}
+			className={`h-[28px] min-h-[28px] max-h-[28px] px-0.5 py-0.5 whitespace-nowrap overflow-x-hidden overflow-y-hidden`}
 			placeholder='Ask Spud to do something'
 			onChangeText={onChangeText}
 			onKeyDown={onKeyDown}
@@ -3371,9 +3443,44 @@ export const SidebarChat = () => {
 		}
 		return 'New chat'
 	}
+
+	const tabsSig = allThreadIdsForTabs.join(',')
+	useLayoutEffect(() => {
+		refreshChatTabsScroll()
+		const el = chatTabsScrollRef.current
+		if (!el) {
+			return
+		}
+		const ro = new ResizeObserver(refreshChatTabsScroll)
+		ro.observe(el)
+		return () => ro.disconnect()
+	}, [tabsSig, chatThreadsState.currentThreadId, refreshChatTabsScroll])
+
+	useLayoutEffect(() => {
+		const el = chatTabsScrollRef.current
+		const selected = el?.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement | null
+		selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+		queueMicrotask(refreshChatTabsScroll)
+	}, [chatThreadsState.currentThreadId, tabsSig, refreshChatTabsScroll])
+
 	const chatTabsBar = (
 		<div className='vc-chat-tabs-bar'>
-			<div className='vc-chat-tabs-scroll' role='tablist' aria-label='Chat threads'>
+			<button
+				type='button'
+				className='vc-chat-tabs-nav'
+				disabled={!chatTabsScroll.canPrev}
+				aria-label='Scroll tabs left'
+				onClick={() => chatTabsScrollRef.current?.scrollBy({ left: -H_SCROLL_STEP, behavior: 'smooth' })}
+			>
+				<ChevronLeft size={14} />
+			</button>
+			<div
+				ref={chatTabsScrollRef}
+				onScroll={refreshChatTabsScroll}
+				className='vc-chat-tabs-scroll vc-scrollbar-none'
+				role='tablist'
+				aria-label='Chat threads'
+			>
 				{allThreadIdsForTabs.map(id => {
 					const t = chatThreadsState.allThreads[id]
 					if (!t) return null
@@ -3411,22 +3518,17 @@ export const SidebarChat = () => {
 			</div>
 			<button
 				type='button'
-				className='vc-chat-tab-new'
-				aria-label='New chat'
-				title='New chat'
-				onClick={() => chatThreadsService.openNewThread()}
+				className='vc-chat-tabs-nav'
+				disabled={!chatTabsScroll.canNext}
+				aria-label='Scroll tabs right'
+				onClick={() => chatTabsScrollRef.current?.scrollBy({ left: H_SCROLL_STEP, behavior: 'smooth' })}
 			>
-				<CirclePlus size={12} />
+				<ChevronRight size={14} />
 			</button>
 		</div>
 	)
 
-	const cloudAndTabs = (
-		<>
-			<SpudCloudBar />
-			{chatTabsBar}
-		</>
-	)
+	const cloudAndTabs = <>{chatTabsBar}</>
 
 	const threadPageInput = <div key={'input' + chatThreadsState.currentThreadId} className='flex-shrink-0'>
 		<CommandBarInChat />

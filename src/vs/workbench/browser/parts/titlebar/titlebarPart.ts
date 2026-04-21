@@ -652,11 +652,20 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			);
 
 			// --- Layout Actions
+			// Split: primary side bar + tab bar + layout menu (groups 1_* / 2_layout_titlebar_primary) on the left; auxiliary bar + panel (3_layout_titlebar_secondary) on the right.
 			if (this.layoutToolbarMenu) {
 				fillInActionBarActions(
 					this.layoutToolbarMenu.getActions(),
 					actions,
-					() => !this.editorActionsEnabled // Layout Actions in overflow menu when editor actions enabled in title bar
+					(group) => {
+						if (group === '3_layout_titlebar_secondary') {
+							return false;
+						}
+						if (this.editorActionsEnabled) {
+							return group === '2_layout_titlebar_primary' || group === '1_layout' || group === '1_workbench_layout';
+						}
+						return true;
+					}
 				);
 			}
 

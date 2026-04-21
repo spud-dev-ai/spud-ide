@@ -333,9 +333,12 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 				}
 			}
 
-			readS.globalSettings = {
-				...deepClone(defaultGlobalSettings),
-				...readS.globalSettings,
+			readS = {
+				...readS,
+				globalSettings: {
+					...deepClone(defaultGlobalSettings),
+					...readS.globalSettings,
+				},
 			}
 		}
 

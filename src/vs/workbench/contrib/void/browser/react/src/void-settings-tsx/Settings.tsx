@@ -34,6 +34,18 @@ type Tab =
 	| 'general'
 	| 'all';
 
+/** Shared responsive typography + spacing for settings sections (mobile → desktop). */
+const settingsSectionTitleClass = 'text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-void-fg-1 mb-2 sm:mb-3'
+const settingsSectionLeadClass = 'text-sm sm:text-[15px] leading-relaxed text-void-fg-3 mb-3 sm:mb-4'
+
+const SettingsSectionCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+	<section
+		className={`rounded-xl border border-void-border-3 bg-void-bg-1/85 p-4 shadow-sm backdrop-blur-[1px] dark:bg-void-bg-2/45 sm:p-5 ${className ?? ''}`}
+		style={{ borderColor: 'var(--vscode-widget-border, rgba(0, 0, 0, 0.1))' }}
+	>
+		{children}
+	</section>
+)
 
 const SPUD_LIGHT_THEME_ID = 'Spud Paper'
 const SPUD_DARK_THEME_ID = 'Spud Paper Dark'
@@ -52,7 +64,7 @@ const AppearanceToggle = () => {
 		metricsService.capture('Set appearance', { mode })
 	}
 
-	const baseBtn = 'flex items-center gap-2 px-4 py-1.5 text-sm border border-void-border-1 transition-colors'
+	const baseBtn = 'flex items-center justify-center gap-2 min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 text-sm border border-void-border-1 transition-colors touch-manipulation'
 	const activeCls = 'bg-void-bg-3 text-void-fg-1'
 	const inactiveCls = 'bg-void-bg-1 text-void-fg-3 hover:bg-void-bg-2'
 
@@ -455,6 +467,17 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 		return Number(b.providerEnabled) - Number(a.providerEnabled)
 	})
 
+	type RowModel = (typeof modelDump)[number]
+	const modelGroups: { providerName: ProviderName; models: RowModel[] }[] = []
+	for (const m of modelDump) {
+		const last = modelGroups[modelGroups.length - 1]
+		if (!last || last.providerName !== m.providerName) {
+			modelGroups.push({ providerName: m.providerName, models: [m] })
+		} else {
+			last.models.push(m)
+		}
+	}
+
 	// Add model handler
 	const handleAddModel = () => {
 		if (!userChosenProviderName) {
@@ -483,91 +506,98 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 		setErrorString('');
 	};
 
-	return <div className=''>
-		{modelDump.map((m, i) => {
-			const { isHidden, type, modelName, providerName, providerEnabled } = m
+	const renderModelRow = (m: RowModel) => {
+		const { isHidden, type, modelName, providerName, providerEnabled } = m
+		const providerTitle = displayInfoOfProviderName(providerName).title
+		const disabled = !providerEnabled
+		const value = disabled ? false : !isHidden
+		const tooltipName = (
+			disabled ? `Add ${providerTitle} to enable`
+				: value === true ? 'Show in Dropdown'
+					: 'Hide from Dropdown'
+		)
+		const detailAboutModel = type === 'autodetected' ?
+			<Asterisk size={14} className="inline-block shrink-0 align-text-top brightness-115 stroke-[2] text-[#0e70c0]" data-tooltip-id='void-tooltip' data-tooltip-place='right' data-tooltip-content='Detected locally' />
+			: type === 'custom' ?
+				<Asterisk size={14} className="inline-block shrink-0 align-text-top brightness-115 stroke-[2] text-[#0e70c0]" data-tooltip-id='void-tooltip' data-tooltip-place='right' data-tooltip-content='Custom model' />
+				: undefined
+		const hasOverrides = !!settingsState.overridesOfModel?.[providerName]?.[modelName]
 
-			const isNewProviderName = (i > 0 ? modelDump[i - 1] : undefined)?.providerName !== providerName
-
-			const providerTitle = displayInfoOfProviderName(providerName).title
-
-			const disabled = !providerEnabled
-			const value = disabled ? false : !isHidden
-
-			const tooltipName = (
-				disabled ? `Add ${providerTitle} to enable`
-					: value === true ? 'Show in Dropdown'
-						: 'Hide from Dropdown'
-			)
-
-
-			const detailAboutModel = type === 'autodetected' ?
-				<Asterisk size={14} className="inline-block align-text-top brightness-115 stroke-[2] text-[#0e70c0]" data-tooltip-id='void-tooltip' data-tooltip-place='right' data-tooltip-content='Detected locally' />
-				: type === 'custom' ?
-					<Asterisk size={14} className="inline-block align-text-top brightness-115 stroke-[2] text-[#0e70c0]" data-tooltip-id='void-tooltip' data-tooltip-place='right' data-tooltip-content='Custom model' />
-					: undefined
-
-			const hasOverrides = !!settingsState.overridesOfModel?.[providerName]?.[modelName]
-
-			return <div key={`${modelName}${providerName}`}
-				className={`flex items-center justify-between gap-4 hover:bg-black/10 dark:hover:bg-gray-300/10 py-1 px-3 rounded-sm overflow-hidden cursor-default truncate group
-				`}
+		return (
+			<div
+				key={`${modelName}${providerName}`}
+				className="group flex cursor-default items-center justify-between gap-3 overflow-hidden rounded-md px-2 py-2.5 sm:px-3 hover:bg-black/10 dark:hover:bg-gray-300/10"
 			>
-				{/* left part is width:full */}
-				<div className={`flex flex-grow items-center gap-4`}>
-					<span className='w-full max-w-32'>{isNewProviderName ? providerTitle : ''}</span>
-					<span className='w-fit max-w-[400px] truncate'>{modelName}</span>
+				<div className="flex min-w-0 flex-1 items-center gap-2">
+					<span className="truncate text-sm text-void-fg-1">{modelName}</span>
+					{detailAboutModel}
 				</div>
-
-				{/* right part is anything that fits */}
-				<div className="flex items-center gap-2 w-fit">
-
-					{/* Advanced Settings button (gear). Hide entirely when provider/model disabled. */}
+				<div className="flex w-fit shrink-0 items-center gap-2">
 					{disabled ? null : (
-						<div className="w-5 flex items-center justify-center">
+						<div className="flex w-5 items-center justify-center">
 							<button
+								type="button"
 								onClick={() => { setOpenSettingsModel({ modelName, providerName, type }) }}
-								data-tooltip-id='void-tooltip'
-								data-tooltip-place='right'
-								data-tooltip-content='Advanced Settings'
+								data-tooltip-id="void-tooltip"
+								data-tooltip-place="right"
+								data-tooltip-content="Advanced Settings"
 								className={`${hasOverrides ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
 							>
 								<Plus size={12} className="text-void-fg-3 opacity-50" />
 							</button>
 						</div>
 					)}
-
-					{/* Blue star */}
-					{detailAboutModel}
-
-
-					{/* Switch */}
 					<VoidSwitch
 						value={value}
-						onChange={() => { settingsStateService.toggleModelHidden(providerName, modelName); }}
+						onChange={() => { settingsStateService.toggleModelHidden(providerName, modelName) }}
 						disabled={disabled}
-						size='sm'
-
-						data-tooltip-id='void-tooltip'
-						data-tooltip-place='right'
+						size="sm"
+						data-tooltip-id="void-tooltip"
+						data-tooltip-place="right"
 						data-tooltip-content={tooltipName}
 					/>
-
-					{/* X button */}
-					<div className={`w-5 flex items-center justify-center`}>
-						{type === 'default' || type === 'autodetected' ? null : <button
-							onClick={() => { settingsStateService.deleteModel(providerName, modelName); }}
-							data-tooltip-id='void-tooltip'
-							data-tooltip-place='right'
-							data-tooltip-content='Delete'
-							className={`${hasOverrides ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
-						>
-							<X size={12} className="text-void-fg-3 opacity-50" />
-						</button>}
+					<div className="flex w-5 items-center justify-center">
+						{type === 'default' || type === 'autodetected' ? null : (
+							<button
+								type="button"
+								onClick={() => { settingsStateService.deleteModel(providerName, modelName) }}
+								data-tooltip-id="void-tooltip"
+								data-tooltip-place="right"
+								data-tooltip-content="Delete"
+								className={`${hasOverrides ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+							>
+								<X size={12} className="text-void-fg-3 opacity-50" />
+							</button>
+						)}
 					</div>
 				</div>
 			</div>
-		})}
+		)
+	}
+
+	return <div className="space-y-3">
+		{modelGroups.map(({ providerName, models }) => (
+			<div
+				key={providerName}
+				className="overflow-hidden rounded-lg border border-void-border-3/90 bg-void-bg-1/70 dark:bg-void-bg-1/25"
+				style={{ borderColor: 'var(--vscode-widget-border, rgba(0, 0, 0, 0.12))' }}
+			>
+				<div
+					className="border-b px-3 py-2 sm:px-4"
+					style={{
+						borderColor: 'var(--vscode-widget-border, rgba(0, 0, 0, 0.08))',
+						background: 'color-mix(in oklab, var(--vscode-sideBar-background) 75%, transparent)',
+					}}
+				>
+					<span className="text-[11px] font-semibold uppercase tracking-wide text-void-fg-3">
+						{displayInfoOfProviderName(providerName).title}
+					</span>
+				</div>
+				<div className="divide-y divide-void-border-3/60">
+					{models.map((m) => renderModelRow(m))}
+				</div>
+			</div>
+		))}
 
 		{/* Add Model Section */}
 		{showCheckmark ? (
@@ -1106,9 +1136,9 @@ const SpudCloudSettingsSection = () => {
 	};
 
 	return (
-		<div className='max-w-[600px] mb-4'>
-			<h2 className='text-3xl mb-2'>Spud Cloud</h2>
-			<h4 className='text-void-fg-3 mb-4'>
+		<div className='max-w-[min(100%,36rem)] mb-4 sm:mb-6'>
+			<h2 className={settingsSectionTitleClass}>Spud Cloud</h2>
+			<h4 className={settingsSectionLeadClass}>
 				Connect this IDE to the same Spud Cloud workspace as the web dashboard (usage, billing, team). Use your deployed URL or{' '}
 				<code className='text-xs'>http://localhost:8788</code> when the API runs locally.
 			</h4>
@@ -1236,15 +1266,45 @@ export const Settings = () => {
 
 	const enhanceDark = isDark && settingsState.globalSettings.enhanceBuiltinDarkChrome
 	return (
-		<div className={`@@void-scope ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto' }}>
-			<div className="flex flex-col md:flex-row w-full gap-6 max-w-[900px] mx-auto mb-32" style={{ minHeight: '80vh' }}>
-				{/* ──────────────  SIDEBAR  ────────────── */}
+		<div
+			className={`@@void-scope vc-settings-shell ${isDark ? 'dark' : ''}${enhanceDark ? ' @@void-enhance-dark' : ''}`}
+			style={{
+				height: '100%',
+				width: '100%',
+				overflow: 'auto',
+				background: 'var(--vscode-sideBar-background, var(--vscode-editor-background))',
+				paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
+			}}
+		>
+			<div className="flex flex-col w-full min-h-full">
+				{/* Paper + Earth header — ink label, calm chrome */}
+				<header
+					className="shrink-0 border-b px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 sm:px-5 sm:py-4 sm:pt-4"
+					style={{
+						borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))',
+						background: 'color-mix(in oklab, var(--vscode-sideBar-background) 92%, transparent)',
+					}}
+				>
+					<div className="text-[10px] sm:text-[10.5px] font-semibold uppercase tracking-[0.14em] text-void-fg-3">
+						Spud
+					</div>
+					<h1 className="text-lg sm:text-[1.35rem] font-semibold tracking-tight text-void-fg-1 mt-0.5">
+						Settings
+					</h1>
+				</header>
 
-				<aside className="md:w-1/4 w-full p-6 shrink-0">
-					{/* vertical tab list */}
-					<div className="flex flex-col gap-2 mt-12">
+				<nav
+					aria-label="Settings sections"
+					className="void-vc-settings-nav sticky top-0 z-[2] shrink-0 border-b backdrop-blur-md"
+					style={{
+						borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))',
+						background: 'color-mix(in oklab, var(--vscode-sideBar-background) 90%, transparent)',
+					}}
+				>
+					<div className="mx-auto flex w-full max-w-4xl flex-nowrap items-stretch gap-1 overflow-x-auto px-3 py-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] sm:px-5">
 						{navItems.map(({ tab, label }) => (
 							<button
+								type="button"
 								key={tab}
 								onClick={() => {
 									if (tab === 'all') {
@@ -1255,79 +1315,78 @@ export const Settings = () => {
 									}
 								}}
 								className={`
-          py-2 px-4 rounded-md text-left transition-all duration-200
-          ${selectedSection === tab
-										? 'bg-[#0e70c0]/80 text-white font-medium shadow-sm'
-										: 'bg-void-bg-2 hover:bg-void-bg-2/80 text-void-fg-1'}
-        `}
+									shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-left text-[13px] transition-colors duration-150 touch-manipulation min-h-[40px] sm:min-h-0
+									${selectedSection === tab
+									? 'bg-void-bg-2 font-medium text-void-fg-1 shadow-sm ring-1 ring-[#007FD4]/35'
+									: 'text-void-fg-2 hover:bg-void-bg-2/70 active:bg-void-bg-2'}
+								`}
 							>
 								{label}
 							</button>
 						))}
 					</div>
-				</aside>
+				</nav>
 
-				{/* ───────────── MAIN PANE ───────────── */}
-				<main className="flex-1 p-6 select-none">
-
-
-
-					<div className='max-w-3xl'>
-
-						<h1 className='text-2xl w-full'>{`Spud's Settings`}</h1>
-
-						<div className='w-full h-[1px] my-2' />
-
-						{/* Models section (formerly FeaturesTab) */}
-						<ErrorBoundary>
-							<RedoOnboardingButton />
-						</ErrorBoundary>
-
-						<div className='w-full h-[1px] my-4' />
-
-						{/* All sections in flex container with gap-12 */}
-						<div className='flex flex-col gap-12'>
+				<main
+					className="flex min-h-0 w-full flex-1 select-none overflow-x-hidden px-4 py-4 sm:px-5 sm:py-5 md:px-6 lg:py-6"
+					style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left, 0px))', paddingRight: 'max(1rem, env(safe-area-inset-right, 0px))' }}
+				>
+					<div className="mx-auto w-full max-w-4xl">
+						<div className="flex flex-col gap-5 sm:gap-6 lg:gap-8">
 							{/* Models section (formerly FeaturesTab) */}
 							<div className={shouldShowTab('models') ? `` : 'hidden'}>
 								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Models</h2>
-									<ModelDump />
-									<div className='w-full h-[1px] my-4' />
-									<AutoDetectLocalModelsToggle />
-									<RefreshableModels />
+									<SettingsSectionCard>
+										<div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
+											<h2 className="text-xl font-semibold tracking-tight text-void-fg-1 sm:text-2xl">Models</h2>
+											<RedoOnboardingButton className="text-sm shrink-0 self-start" />
+										</div>
+										<ModelDump />
+										<div
+											className="my-5 w-full border-t border-void-border-3 pt-5"
+											style={{ borderColor: 'var(--vscode-widget-border, rgba(0,0,0,0.08))' }}
+										/>
+										<AutoDetectLocalModelsToggle />
+										<RefreshableModels />
+									</SettingsSectionCard>
 								</ErrorBoundary>
 							</div>
 
 							{/* Local Providers section */}
 							<div className={shouldShowTab('localProviders') ? `` : 'hidden'}>
 								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Local Providers</h2>
-									<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access any model that you host locally. We automatically detect your local models by default.`}</h3>
+									<SettingsSectionCard>
+										<h2 className={settingsSectionTitleClass}>Local Providers</h2>
+										<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access any model that you host locally. We automatically detect your local models by default.`}</h3>
 
-									<div className='opacity-80 mb-4'>
-										<OllamaSetupInstructions sayWeAutoDetect={true} />
-									</div>
+										<div className='opacity-80 mb-4'>
+											<OllamaSetupInstructions sayWeAutoDetect={true} />
+										</div>
 
-									<VoidProviderSettings providerNames={localProviderNames} />
+										<VoidProviderSettings providerNames={localProviderNames} />
+									</SettingsSectionCard>
 								</ErrorBoundary>
 							</div>
 
 							{/* Main Providers section */}
 							<div className={shouldShowTab('providers') ? `` : 'hidden'}>
 								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Main Providers</h2>
-									<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access models from Anthropic, OpenAI, OpenRouter, and more.`}</h3>
+									<SettingsSectionCard>
+										<h2 className={settingsSectionTitleClass}>Main Providers</h2>
+										<h3 className={`text-void-fg-3 mb-2`}>{`Spud can access models from Anthropic, OpenAI, OpenRouter, and more.`}</h3>
 
-									<VoidProviderSettings providerNames={nonlocalProviderNames} />
+										<VoidProviderSettings providerNames={nonlocalProviderNames} />
+									</SettingsSectionCard>
 								</ErrorBoundary>
 							</div>
 
 							{/* Feature Options section */}
 							<div className={shouldShowTab('featureOptions') ? `` : 'hidden'}>
 								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Feature Options</h2>
+									<SettingsSectionCard>
+										<h2 className={settingsSectionTitleClass}>Feature Options</h2>
 
-									<div className='flex flex-col gap-y-8 my-4'>
+										<div className='my-4 flex flex-col gap-y-8'>
 										<ErrorBoundary>
 											{/* FIM */}
 											<div>
@@ -1500,20 +1559,23 @@ export const Settings = () => {
 											</div>
 										</ErrorBoundary>
 									</div>
+									</SettingsSectionCard>
 								</ErrorBoundary>
 							</div>
 
 							{/* General section */}
-							<div className={`${shouldShowTab('general') ? `` : 'hidden'} flex flex-col gap-12`}>
+							<div className={`${shouldShowTab('general') ? `` : 'hidden'} flex flex-col gap-5 sm:gap-6 lg:gap-8`}>
 								<ErrorBoundary>
-									<SpudCloudSettingsSection />
+									<SettingsSectionCard>
+										<SpudCloudSettingsSection />
+									</SettingsSectionCard>
 								</ErrorBoundary>
 
 								{/* One-Click Switch section */}
-								<div>
+								<SettingsSectionCard>
 									<ErrorBoundary>
-										<h2 className='text-3xl mb-2'>One-Click Switch</h2>
-										<h4 className='text-void-fg-3 mb-4'>{`Transfer your editor settings into Spud.`}</h4>
+										<h2 className={settingsSectionTitleClass}>One-Click Switch</h2>
+										<h4 className={settingsSectionLeadClass}>{`Transfer your editor settings into Spud.`}</h4>
 
 										<div className='flex flex-col gap-2'>
 											<OneClickSwitchButton className='w-48' fromEditor="VS Code" />
@@ -1521,12 +1583,12 @@ export const Settings = () => {
 											<OneClickSwitchButton className='w-48' fromEditor="Windsurf" />
 										</div>
 									</ErrorBoundary>
-								</div>
+								</SettingsSectionCard>
 
 								{/* Import/Export section */}
-								<div>
-									<h2 className='text-3xl mb-2'>Import/Export</h2>
-									<h4 className='text-void-fg-3 mb-4'>{`Transfer Spud's settings and chats in and out of Spud.`}</h4>
+								<SettingsSectionCard>
+									<h2 className={settingsSectionTitleClass}>Import/Export</h2>
+									<h4 className={settingsSectionLeadClass}>{`Transfer Spud's settings and chats in and out of Spud.`}</h4>
 									<div className='flex flex-col gap-8'>
 										{/* Settings Subcategory */}
 										<div className='flex flex-col gap-2 max-w-48 w-full'>
@@ -1556,14 +1618,14 @@ export const Settings = () => {
 											</ConfirmButton>
 										</div>
 									</div>
-								</div>
+								</SettingsSectionCard>
 
 
 
 								{/* Appearance — workbench theme + optional Spud Paper shortcuts + rich dark panels */}
-								<div>
-									<h2 className={`text-3xl mb-2`}>Appearance</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>{`Spud panels use your active VS Code color theme. The buttons below jump to Spud Paper light/dark; you can use Command Palette → Color Theme to pick any built-in dark theme instead.`}</h4>
+								<SettingsSectionCard>
+									<h2 className={settingsSectionTitleClass}>Appearance</h2>
+									<h4 className={settingsSectionLeadClass}>{`Spud panels use your active VS Code color theme. The buttons below jump to Spud Paper light/dark; you can use Command Palette → Color Theme to pick any built-in dark theme instead.`}</h4>
 
 									<ErrorBoundary>
 										<AppearanceToggle />
@@ -1581,33 +1643,33 @@ export const Settings = () => {
 											<span className='text-void-fg-3 text-xs'>{settingsState.globalSettings.enhanceBuiltinDarkChrome ? 'Enabled' : 'Disabled'}</span>
 										</div>
 									</div>
-								</div>
+								</SettingsSectionCard>
 
 								{/* Built-in Settings section */}
-								<div>
-									<h2 className={`text-3xl mb-2`}>Built-in Settings</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>{`IDE settings and keyboard settings.`}</h4>
+								<SettingsSectionCard>
+									<h2 className={settingsSectionTitleClass}>Built-in Settings</h2>
+									<h4 className={settingsSectionLeadClass}>{`IDE settings and keyboard settings.`}</h4>
 
 									<ErrorBoundary>
-										<div className='flex flex-col gap-2 justify-center max-w-48 w-full'>
-											<VoidButtonBgDarken className='px-4 py-1' onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+										<div className='flex flex-col gap-2 justify-center w-full max-w-full sm:max-w-48'>
+											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
 												General Settings
 											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-1' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
+											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
 												Keyboard Settings
 											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='px-4 py-1' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
+											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
 												Open Logs
 											</VoidButtonBgDarken>
 										</div>
 									</ErrorBoundary>
-								</div>
+								</SettingsSectionCard>
 
 
 								{/* Metrics section */}
-								<div className='max-w-[600px]'>
-									<h2 className={`text-3xl mb-2`}>Metrics</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>Very basic anonymous usage tracking helps us keep Spud running smoothly. You may opt out below. Regardless of this setting, Spud never sees your code, messages, or API keys.</h4>
+								<SettingsSectionCard className="max-w-[min(100%,36rem)]">
+									<h2 className={settingsSectionTitleClass}>Metrics</h2>
+									<h4 className={settingsSectionLeadClass}>Very basic anonymous usage tracking helps us keep Spud running smoothly. You may opt out below. Regardless of this setting, Spud never sees your code, messages, or API keys.</h4>
 
 									<div className='my-2'>
 										{/* Disable All Metrics Switch */}
@@ -1625,12 +1687,12 @@ export const Settings = () => {
 											</div>
 										</ErrorBoundary>
 									</div>
-								</div>
+								</SettingsSectionCard>
 
 								{/* AI Instructions section */}
-								<div className='max-w-[600px]'>
-									<h2 className={`text-3xl mb-2`}>AI Instructions</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>
+								<SettingsSectionCard className="max-w-[min(100%,36rem)]">
+									<h2 className={settingsSectionTitleClass}>AI Instructions</h2>
+									<h4 className={settingsSectionLeadClass}>
 										<ChatMarkdownRender inPTag={true} string={`
 System instructions to include with all AI requests.
 Alternatively, place a \`.voidrules\` file in the root of your workspace.
@@ -1659,7 +1721,7 @@ Alternatively, place a \`.voidrules\` file in the root of your workspace.
 											{`When disabled, Spud will not include anything in the system message except for content you specified above.`}
 										</div>
 									</div>
-								</div>
+								</SettingsSectionCard>
 
 							</div>
 
@@ -1668,21 +1730,23 @@ Alternatively, place a \`.voidrules\` file in the root of your workspace.
 							{/* MCP section */}
 							<div className={shouldShowTab('mcp') ? `` : 'hidden'}>
 								<ErrorBoundary>
-									<h2 className='text-3xl mb-2'>MCP</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>
-										<ChatMarkdownRender inPTag={true} string={`
+									<SettingsSectionCard>
+										<h2 className={settingsSectionTitleClass}>MCP</h2>
+										<h4 className={settingsSectionLeadClass}>
+											<ChatMarkdownRender inPTag={true} string={`
 Use Model Context Protocol to provide Agent mode with more tools.
 							`} chatMessageLocation={undefined} />
-									</h4>
-									<div className='my-2'>
-										<VoidButtonBgDarken className='px-4 py-1 w-full max-w-48' onClick={async () => { await mcpService.revealMCPConfigFile() }}>
-											Add MCP Server
-										</VoidButtonBgDarken>
-									</div>
+										</h4>
+										<div className='my-2'>
+											<VoidButtonBgDarken className='px-4 py-1 w-full max-w-48' onClick={async () => { await mcpService.revealMCPConfigFile() }}>
+												Add MCP Server
+											</VoidButtonBgDarken>
+										</div>
 
-									<ErrorBoundary>
-										<MCPServersList />
-									</ErrorBoundary>
+										<ErrorBoundary>
+											<MCPServersList />
+										</ErrorBoundary>
+									</SettingsSectionCard>
 								</ErrorBoundary>
 							</div>
 
@@ -1691,7 +1755,6 @@ Use Model Context Protocol to provide Agent mode with more tools.
 
 
 						</div>
-
 					</div>
 				</main>
 			</div>
