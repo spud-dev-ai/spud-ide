@@ -6,19 +6,33 @@
 // @ts-check
 
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { promises as fs, existsSync } from 'fs';
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const rootDir = path.resolve(__dirname, '..', '..');
 
-function usingBun(): boolean {
+function repoPrefersBun(): boolean {
 	const p = process.env['npm_execpath'] || '';
 	if (p.includes('bun')) {
 		return true;
 	}
 	// `code.sh` invokes `node preLaunch.js` without npm's env — still prefer Bun when the repo uses it.
 	return existsSync(path.join(rootDir, 'bun.lock')) || existsSync(path.join(rootDir, 'bun.lockb'));
+}
+
+function bunExecutableAvailable(): boolean {
+	const bun = process.platform === 'win32' ? 'bun.exe' : 'bun';
+	try {
+		const r = spawnSync(bun, ['--version'], { stdio: 'ignore', env: process.env });
+		return r.status === 0;
+	} catch {
+		return false;
+	}
+}
+
+function usingBun(): boolean {
+	return repoPrefersBun() && bunExecutableAvailable();
 }
 
 function getRunner(): string {
@@ -55,6 +69,14 @@ async function ensureNodeModules() {
 	}
 }
 
+/** Bun skips some native builds; @vscode/sqlite3 has no install script — build for Electron before launch. */
+async function ensureVscodeNativeDeps() {
+	const scriptPath = path.join(rootDir, 'build', 'npm', 'ensureVscodeNativeDeps.js');
+	if (existsSync(scriptPath)) {
+		await runProcess(process.execPath, [scriptPath]);
+	}
+}
+
 async function getElectron() {
 	await runProcess(getRunner(), ['run', 'electron']);
 }
@@ -68,6 +90,7 @@ async function ensureCompiled() {
 
 async function main() {
 	await ensureNodeModules();
+	await ensureVscodeNativeDeps();
 	await getElectron();
 	await ensureCompiled();
 
