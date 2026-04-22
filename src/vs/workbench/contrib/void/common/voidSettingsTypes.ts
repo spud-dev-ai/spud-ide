@@ -458,6 +458,12 @@ export type GlobalSettings = {
 	spudCloudApiBase: string;
 	/** Workspace id for Cloud API calls (`?workspace=`). */
 	spudWorkspaceId: string;
+	/**
+	 * Spud Console access token (JWT). Sent as `Authorization: Bearer …` on
+	 * Cloud API calls. Issued by `console.spud.dev/oauth/token` (PKCE) or the
+	 * device-code flow (`/oauth/device/code`). Leave empty to disable Cloud.
+	 */
+	spudCloudToken: string;
 }
 
 export const defaultGlobalSettings: GlobalSettings = {
@@ -475,8 +481,9 @@ export const defaultGlobalSettings: GlobalSettings = {
 	disableSystemMessage: false,
 	autoAcceptLLMChanges: false,
 	enhanceBuiltinDarkChrome: false,
-	spudCloudApiBase: 'https://cloud.spud.dev',
+	spudCloudApiBase: 'https://console.spud.dev',
 	spudWorkspaceId: 'ws_acme',
+	spudCloudToken: '',
 }
 
 export type GlobalSettingName = keyof GlobalSettings

@@ -1189,7 +1189,7 @@ const ProfileSettingsSection = () => {
 	const [testResult, setTestResult] = useState<string | null>(null);
 
 	const openDashboard = () => {
-		const b = voidSettingsState.globalSettings.spudCloudApiBase.trim() || 'https://cloud.spud.dev';
+		const b = voidSettingsState.globalSettings.spudCloudApiBase.trim() || 'https://console.spud.dev';
 		void commandService.executeCommand('vscode.open', URI.parse(trimTrailingSlash(b)));
 	};
 
@@ -1198,6 +1198,7 @@ const ProfileSettingsSection = () => {
 		const r = await fetchSpudCloudSession(
 			voidSettingsState.globalSettings.spudCloudApiBase,
 			voidSettingsState.globalSettings.spudWorkspaceId,
+			voidSettingsState.globalSettings.spudCloudToken,
 		);
 		if (r.ok) {
 			setTestResult(`Connected as ${r.user.name} · ${r.workspace.name}`);
@@ -1222,7 +1223,7 @@ const ProfileSettingsSection = () => {
 					<VoidInputBox2
 						className='w-full min-h-[28px] px-2 py-1 rounded-sm'
 						initValue={voidSettingsState.globalSettings.spudCloudApiBase}
-						placeholder='https://cloud.spud.dev'
+						placeholder='https://console.spud.dev'
 						onChangeText={(t) => { void voidSettingsService.setGlobalSetting('spudCloudApiBase', t); }}
 					/>
 				</div>
@@ -1234,6 +1235,25 @@ const ProfileSettingsSection = () => {
 						placeholder='ws_acme'
 						onChangeText={(t) => { void voidSettingsService.setGlobalSetting('spudWorkspaceId', t); }}
 					/>
+				</div>
+				<div>
+					<div className='text-xs text-void-fg-3 mb-1'>Spud Cloud access token</div>
+					<VoidInputBox2
+						className='w-full min-h-[28px] px-2 py-1 rounded-sm font-mono'
+						initValue={voidSettingsState.globalSettings.spudCloudToken}
+						placeholder='eyJhbGciOiJIUzI1NiIs…'
+						onChangeText={(t) => { void voidSettingsService.setGlobalSetting('spudCloudToken', t); }}
+					/>
+					<div className='text-[11px] text-void-fg-3 mt-1 leading-snug'>
+						Sign in at console.spud.dev, then copy your access token from
+						<span className='mono'> Profile → Spud Cloud API token</span>.
+						Used for <span className='mono'>/api/v1/me</span>, usage reports,
+						and the OpenAI-compatible gateway at{' '}
+						<span className='mono'>/api/v1/chat/completions</span>{' '}
+						(models <span className='mono'>spud-fast</span>,{' '}
+						<span className='mono'>spud-pro</span>,{' '}
+						<span className='mono'>spud-code</span>).
+					</div>
 				</div>
 				<div className='flex flex-wrap gap-2 items-center'>
 					<VoidButtonBgDarken className='px-4 py-1' onClick={() => { void testConnection(); }}>Test connection</VoidButtonBgDarken>

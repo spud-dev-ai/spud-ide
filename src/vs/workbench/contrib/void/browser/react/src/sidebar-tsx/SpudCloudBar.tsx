@@ -16,8 +16,9 @@ export const SpudCloudBar = () => {
 	const { globalSettings } = useSettingsState();
 	const base = globalSettings.spudCloudApiBase.trim();
 	const workspaceId = globalSettings.spudWorkspaceId.trim() || 'ws_acme';
+	const token = globalSettings.spudCloudToken?.trim() ?? '';
 
-	const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle');
+	const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'err' | 'signin'>('idle');
 	const [line, setLine] = useState<string>('');
 
 	const refresh = useCallback(async () => {
@@ -26,8 +27,13 @@ export const SpudCloudBar = () => {
 			setLine('');
 			return;
 		}
+		if (!token) {
+			setStatus('signin');
+			setLine('Sign in to Spud Cloud');
+			return;
+		}
 		setStatus('loading');
-		const res = await fetchSpudCloudSession(base, workspaceId);
+		const res = await fetchSpudCloudSession(base, workspaceId, token);
 		if (res.ok) {
 			setStatus('ok');
 			setLine(`${res.user.name} · ${res.workspace.name}`);
@@ -35,14 +41,14 @@ export const SpudCloudBar = () => {
 			setStatus('err');
 			setLine(res.error);
 		}
-	}, [base, workspaceId]);
+	}, [base, workspaceId, token]);
 
 	useEffect(() => {
 		void refresh();
 	}, [refresh]);
 
 	const openCloudDashboard = useCallback(() => {
-		const root = base ? trimTrailingSlash(base) : 'https://cloud.spud.dev';
+		const root = base ? trimTrailingSlash(base) : 'https://console.spud.dev';
 		void commandService.executeCommand('vscode.open', URI.parse(root));
 	}, [commandService, base]);
 
@@ -74,6 +80,15 @@ export const SpudCloudBar = () => {
 					<span className='text-void-fg-3 truncate'>Connecting to Spud Cloud…</span>
 				) : status === 'ok' ? (
 					<span className='text-void-fg-2 truncate' title={line}>{line}</span>
+				) : status === 'signin' ? (
+					<button
+						type='button'
+						className='text-void-fg-2 truncate underline decoration-dotted underline-offset-2 hover:text-void-fg-1'
+						onClick={openSpudSettings}
+						title='Paste your Spud Console token in Settings → General → Profile'
+					>
+						Sign in to Spud Cloud
+					</button>
 				) : status === 'err' ? (
 					<span className='text-void-fg-3 truncate' title={line}>Cloud: {line}</span>
 				) : (
