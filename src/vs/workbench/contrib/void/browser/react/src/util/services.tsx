@@ -56,6 +56,7 @@ import { IStorageService, StorageScope } from '../../../../../../../platform/sto
 import { OPT_OUT_KEY } from '../../../../common/storageKeys.js'
 import { ILifecycleService, LifecyclePhase } from '../../../../../../services/lifecycle/common/lifecycle.js'
 import { IExtensionService } from '../../../../../../services/extensions/common/extensions.js'
+import { IWorkbenchLayoutService } from '../../../../../../services/layout/browser/layoutService.js'
 
 
 // normally to do this you'd use a useEffect that calls .onDidChangeState(), but useEffect mounts too late and misses initial state changes
@@ -234,6 +235,7 @@ const getReactAccessor = (accessor: ServicesAccessor) => {
 		IStorageService: accessor.get(IStorageService),
 		ILifecycleService: accessor.get(ILifecycleService),
 		IExtensionService: accessor.get(IExtensionService),
+		IWorkbenchLayoutService: accessor.get(IWorkbenchLayoutService),
 
 	} as const
 	return reactAccessor
@@ -454,6 +456,23 @@ export const useIsWorkspaceReady = () => {
 
 		return () => { cancelled = true }
 	}, [lifecycleService, extensionService, voidSettingsService])
+
+	// Replacing the loading shell with the full chat tree can leave editor/auxiliary
+	// split views without a fresh layout (blank workbench until window resize). Force
+	// layout when we transition to ready; a second pass on the next frame covers
+	// Chromium/Electron compositor edge cases.
+	useEffect(() => {
+		if (!ready) {
+			return
+		}
+		const layoutService = accessor.get('IWorkbenchLayoutService')
+		layoutService.layout()
+		const id = requestAnimationFrame(() => {
+			layoutService.layout()
+		})
+		return () => cancelAnimationFrame(id)
+		// Intentionally depend only on `ready`: `useAccessor()` returns a new object each render.
+	}, [ready])
 
 	return ready
 }

@@ -181,10 +181,8 @@ const RefreshModelButton = ({ providerName }: { providerName: RefreshableProvide
 
 		leftButton={
 			<button
-				type="button"
-				className="vc-settings-nav-arrow"
+				className='flex items-center'
 				disabled={state === 'refreshing' || justFinished !== null}
-				aria-label={`Refresh ${providerTitle} models`}
 				onClick={() => {
 					refreshModelService.startRefreshingModels(providerName, { enableProviderOnSuccess: false, doNotFire: false })
 					metricsService.capture('Click', { providerName, action: 'Refresh Models' })
@@ -244,7 +242,9 @@ export const AnimatedCheckmarkButton = ({ text, className }: { text?: string, cl
 	}, []);
 
 	return <div
-		className={className ?? 'flex items-center gap-1.5 w-fit px-2 py-0.5 text-xs text-zinc-900 bg-zinc-100 rounded-sm'}
+		className={`flex items-center gap-1.5 w-fit
+			${className ? className : `px-2 py-0.5 text-xs text-zinc-900 bg-zinc-100 rounded-sm`}
+		`}
 	>
 		<svg className="size-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 			<path
@@ -267,9 +267,8 @@ export const AnimatedCheckmarkButton = ({ text, className }: { text?: string, cl
 const AddButton = ({ disabled, text = 'Add', ...props }: { disabled?: boolean, text?: React.ReactNode } & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
 
 	return <button
-		type="button"
 		disabled={disabled}
-		className="vc-settings-btn vc-settings-btn--primary"
+		className={`bg-[#0e70c0] px-3 py-1 text-white rounded-sm ${!disabled ? 'hover:bg-[#1177cb] cursor-pointer' : 'opacity-50 cursor-not-allowed bg-opacity-70'}`}
 		{...props}
 	>{text}</button>
 
@@ -419,12 +418,10 @@ const SimpleModelSettingsDialog = ({
 						Change Defaults for {modelName} ({displayInfoOfProviderName(providerName).title})
 					</h3>
 					<button
-						type="button"
 						onClick={onClose}
-						className="vc-settings-nav-arrow"
-						aria-label="Close"
+						className="text-void-fg-3 hover:text-void-fg-1"
 					>
-						<X className="size-4" />
+						<X className="size-5" />
 					</button>
 				</div>
 
@@ -462,10 +459,13 @@ const SimpleModelSettingsDialog = ({
 
 
 				<div className="flex justify-end gap-2 mt-4">
-					<VoidButtonBgDarken onClick={onClose}>
+					<VoidButtonBgDarken onClick={onClose} className="px-3 py-1">
 						Cancel
 					</VoidButtonBgDarken>
-					<VoidButtonBgDarken primary onClick={onSave}>
+					<VoidButtonBgDarken
+						onClick={onSave}
+						className="px-3 py-1 bg-[#0e70c0] text-white"
+					>
 						Save
 					</VoidButtonBgDarken>
 				</div>
@@ -675,7 +675,7 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 		{/* Add Model Section */}
 		{showCheckmark ? (
 			<div className="mt-4">
-				<AnimatedCheckmarkButton text='Added' className="vc-settings-btn vc-settings-btn--primary pointer-events-none" />
+				<AnimatedCheckmarkButton text='Added' className="bg-[#0e70c0] text-white px-3 py-1 rounded-sm" />
 			</div>
 		) : isAddModelOpen ? (
 			<div className="mt-4">
@@ -737,14 +737,15 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 				)}
 			</div>
 		) : (
-			<button
-				type="button"
-				className="vc-settings-btn mt-4 max-w-full gap-1.5"
+			<div
+				className="text-void-fg-4 flex flex-nowrap text-nowrap items-center hover:brightness-110 cursor-pointer mt-4"
 				onClick={() => setIsAddModelOpen(true)}
 			>
-				<Plus size={16} className="shrink-0" />
-				<span>Add a model</span>
-			</button>
+				<div className="flex items-center gap-1">
+					<Plus size={16} />
+					<span>Add a model</span>
+				</div>
+			</div>
 		)}
 
 		{/* Model Settings Dialog */}
@@ -1057,10 +1058,10 @@ export const OneClickSwitchButton = ({ fromEditor = 'VS Code', className = '' }:
 	}
 
 	return <>
-		<VoidButtonBgDarken className={`max-w-48 min-h-[52px] px-6 py-4 ${className}`} disabled={transferState.type !== 'done'} onClick={onClick}>
+		<VoidButtonBgDarken className={`max-w-48 p-4 ${className}`} disabled={transferState.type !== 'done'} onClick={onClick}>
 			{transferState.type === 'done' ? `Transfer from ${fromEditor}`
 				: transferState.type === 'loading' ? <span className='text-nowrap flex flex-nowrap'>Transferring<IconLoading /></span>
-					: transferState.type === 'justfinished' ? <AnimatedCheckmarkButton text='Settings Transferred' className="flex items-center gap-1.5 border-0 bg-transparent p-0 text-inherit shadow-none min-h-0" />
+					: transferState.type === 'justfinished' ? <AnimatedCheckmarkButton text='Settings Transferred' className='bg-none' />
 						: null
 			}
 		</VoidButtonBgDarken>
@@ -1235,8 +1236,8 @@ const ProfileSettingsSection = () => {
 					/>
 				</div>
 				<div className='flex flex-wrap gap-2 items-center'>
-					<VoidButtonBgDarken onClick={() => { void testConnection(); }}>Test connection</VoidButtonBgDarken>
-					<VoidButtonBgDarken primary onClick={openDashboard}>Open Cloud dashboard</VoidButtonBgDarken>
+					<VoidButtonBgDarken className='px-4 py-1' onClick={() => { void testConnection(); }}>Test connection</VoidButtonBgDarken>
+					<VoidButtonBgDarken className='px-4 py-1' onClick={openDashboard}>Open Cloud dashboard</VoidButtonBgDarken>
 					{testResult ? <span className='text-xs text-void-fg-3 max-w-md'>{testResult}</span> : null}
 				</div>
 			</div>
@@ -1497,13 +1498,13 @@ export const Settings = () => {
 										{/* Settings Subcategory */}
 										<div className='flex flex-col gap-2 max-w-48 w-full'>
 											<input key={2 * s} ref={fileInputSettingsRef} type='file' accept='.json' className='hidden' onChange={handleUpload('Settings')} />
-											<VoidButtonBgDarken className='w-full' onClick={() => { fileInputSettingsRef.current?.click() }}>
+											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => { fileInputSettingsRef.current?.click() }}>
 												Import Settings
 											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='w-full' onClick={() => onDownload('Settings')}>
+											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => onDownload('Settings')}>
 												Export Settings
 											</VoidButtonBgDarken>
-											<ConfirmButton className='w-full' onConfirm={() => { voidSettingsService.resetState(); }}>
+											<ConfirmButton className='px-4 py-1 w-full' onConfirm={() => { voidSettingsService.resetState(); }}>
 												Reset Settings
 											</ConfirmButton>
 										</div>
@@ -1511,13 +1512,13 @@ export const Settings = () => {
 										{/* Chats Subcategory */}
 										<div className='flex flex-col gap-2 max-w-48 w-full'>
 											<input key={2 * s + 1} ref={fileInputChatsRef} type='file' accept='.json' className='hidden' onChange={handleUpload('Chats')} />
-											<VoidButtonBgDarken className='w-full' onClick={() => { fileInputChatsRef.current?.click() }}>
+											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => { fileInputChatsRef.current?.click() }}>
 												Import Chats
 											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='w-full' onClick={() => onDownload('Chats')}>
+											<VoidButtonBgDarken className='px-4 py-1 w-full' onClick={() => onDownload('Chats')}>
 												Export Chats
 											</VoidButtonBgDarken>
-											<ConfirmButton className='w-full' onConfirm={() => { chatThreadsService.resetState(); }}>
+											<ConfirmButton className='px-4 py-1 w-full' onConfirm={() => { chatThreadsService.resetState(); }}>
 												Reset Chats
 											</ConfirmButton>
 										</div>
@@ -1556,13 +1557,13 @@ export const Settings = () => {
 
 									<ErrorBoundary>
 										<div className='flex flex-col gap-2 justify-center w-full max-w-full sm:max-w-48'>
-											<VoidButtonBgDarken className='min-h-[44px] w-full touch-manipulation justify-center sm:min-h-0' onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
 												General Settings
 											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='min-h-[44px] w-full touch-manipulation justify-center sm:min-h-0' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
+											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { commandService.executeCommand('workbench.action.openGlobalKeybindings') }}>
 												Keyboard Settings
 											</VoidButtonBgDarken>
-											<VoidButtonBgDarken className='min-h-[44px] w-full touch-manipulation justify-center sm:min-h-0' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
+											<VoidButtonBgDarken className='px-4 py-2.5 sm:py-1.5 min-h-[44px] sm:min-h-0 touch-manipulation justify-center' onClick={() => { nativeHostService.showItemInFolder(environmentService.logsHome.fsPath) }}>
 												Open Logs
 											</VoidButtonBgDarken>
 										</div>
@@ -1881,7 +1882,7 @@ Use Model Context Protocol to provide Agent mode with more tools.
 							`} chatMessageLocation={undefined} />
 										</h4>
 										<div className='my-2'>
-											<VoidButtonBgDarken primary className='w-full max-w-48' onClick={async () => { await mcpService.revealMCPConfigFile() }}>
+											<VoidButtonBgDarken className='px-4 py-1 w-full max-w-48' onClick={async () => { await mcpService.revealMCPConfigFile() }}>
 												Add MCP Server
 											</VoidButtonBgDarken>
 										</div>

@@ -30,7 +30,7 @@ import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { Orientation } from '../../../../base/browser/ui/sash/sash.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 
-/** Primary side bar — activity bar entry + view container id. */
+/** Secondary side bar (Void chat strip) — tab next to History. */
 export const SPUD_SETTINGS_VIEW_CONTAINER_ID = 'workbench.view.spudSettings';
 export const SPUD_SETTINGS_VIEW_ID = 'workbench.view.spudSettings.main';
 
@@ -71,7 +71,7 @@ class SpudSettingsViewPane extends ViewPane {
 	}
 }
 
-// ---------- Register view container on the primary side bar (activity bar) ----------
+// ---------- Register view container on the auxiliary bar (Chat / History / Spud Settings strip) ----------
 
 const viewContainerRegistry = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry);
 const settingsContainer = viewContainerRegistry.registerViewContainer({
@@ -83,16 +83,17 @@ const settingsContainer = viewContainerRegistry.registerViewContainer({
 		orientation: Orientation.HORIZONTAL,
 	}]),
 	hideIfEmpty: false,
-	order: 8,
+	/* After Chat (order 1) and History (order 2) — see sidebarPane.ts */
+	order: 3,
 	rejectAddedViews: true,
 	icon: Codicon.settingsGear,
 	alwaysUseContainerInfo: true,
 	openCommandActionDescriptor: {
 		id: SPUD_SETTINGS_VIEW_CONTAINER_ID,
 		title: nls.localize2('spudSettingsOpenView', 'Spud Settings'),
-		order: 8,
+		order: 3,
 	},
-}, ViewContainerLocation.Sidebar, { isDefault: false });
+}, ViewContainerLocation.AuxiliaryBar, { isDefault: false, doNotRegisterOpenCommand: true });
 
 const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
 viewsRegistry.registerViews([{

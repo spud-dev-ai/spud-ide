@@ -41,19 +41,19 @@
 
 /* Spud: empty-window welcome — wider canvas, breathing room, smaller mark so copy leads */
 .monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark:has(.void-welcome-empty) {
-	max-width: min(480px, calc(100% - 48px));
-	padding: 24px 20px 32px;
+	max-width: min(520px, calc(100% - 48px));
+	padding: 28px 20px 36px;
 	box-sizing: border-box;
-	gap: 20px;
+	gap: 24px;
 	justify-content: center;
 }
 
 .monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark:has(.void-welcome-empty) > .letterpress {
-	max-width: 132px;
-	max-height: 132px;
-	width: 132px;
+	max-width: 120px;
+	max-height: 120px;
+	width: 120px;
 	height: auto;
-	opacity: 0.62 !important;
+	opacity: 0.78 !important;
 	filter: none !important;
 }
 
@@ -113,7 +113,7 @@
 	flex-direction: column;
 	align-items: stretch;
 	width: 100%;
-	max-width: 440px;
+	max-width: 480px;
 	border-spacing: 0;
 	border-collapse: separate;
 }

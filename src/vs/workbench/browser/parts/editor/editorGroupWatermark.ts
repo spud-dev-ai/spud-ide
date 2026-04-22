@@ -25,9 +25,12 @@ import { splitRecentLabel } from '../../../../base/common/labels.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { Codicon } from '../../../../base/common/codicons.js';
+import { IOpenerService } from '../../../../platform/opener/common/opener.js';
+import { URI } from '../../../../base/common/uri.js';
 
 /* eslint-disable */ // Void
 import { VOID_CTRL_K_ACTION_ID, VOID_CTRL_L_ACTION_ID } from '../../../contrib/void/browser/actionIDs.js';
+import { VOID_OPEN_SETTINGS_ACTION_ID } from '../../../contrib/void/browser/voidSettingsPane.js';
 import { VIEWLET_ID as REMOTE_EXPLORER_VIEWLET_ID } from '../../../contrib/remote/browser/remoteExplorer.js';
 /* eslint-enable */
 
@@ -102,6 +105,7 @@ export class EditorGroupWatermark extends Disposable {
 		@IHostService private readonly hostService: IHostService,
 		@ILabelService private readonly labelService: ILabelService,
 		@IViewsService private readonly viewsService: IViewsService,
+		@IOpenerService private readonly openerService: IOpenerService,
 	) {
 		super();
 
@@ -190,14 +194,19 @@ export class EditorGroupWatermark extends Disposable {
 				welcomeBlock.classList.add('void-welcome-block');
 				voidIconBox.appendChild(welcomeBlock);
 
+				const kicker = $('div');
+				kicker.classList.add('void-welcome-kicker');
+				kicker.textContent = 'Spud';
+				welcomeBlock.appendChild(kicker);
+
 				const welcomeTitle = $('div');
 				welcomeTitle.classList.add('void-welcome-title');
-				welcomeTitle.textContent = 'Welcome to Spud';
+				welcomeTitle.textContent = 'Welcome';
 				welcomeBlock.appendChild(welcomeTitle);
 
 				const welcomeSub = $('div');
 				welcomeSub.classList.add('void-welcome-sub');
-				welcomeSub.textContent = 'Open a project or connect to a remote host to get started.';
+				welcomeSub.textContent = 'Open a folder to work locally, connect over SSH, or use Spud Console to manage your account, billing, and team defaults.';
 				welcomeBlock.appendChild(welcomeSub);
 
 				// Vertical stack of CTAs beneath the welcome block. All sizing / colors
@@ -230,6 +239,33 @@ export class EditorGroupWatermark extends Disposable {
 				};
 				buttonContainer.appendChild(openSSHButton.root);
 
+				// Tertiary — account home + agent settings (Paper + Earth chrome)
+				const linkRow = $('div');
+				linkRow.classList.add('void-welcome-footer');
+				const consoleBtn = document.createElement('button');
+				consoleBtn.type = 'button';
+				consoleBtn.classList.add('void-welcome-footer-link');
+				consoleBtn.textContent = 'Spud Console';
+				consoleBtn.title = 'Open console.spud.dev in your browser';
+				consoleBtn.addEventListener('click', () => {
+					void this.openerService.open(URI.parse('https://console.spud.dev/'));
+				});
+				const sep = $('span');
+				sep.classList.add('void-welcome-footer-sep');
+				sep.textContent = '·';
+				sep.setAttribute('aria-hidden', 'true');
+				const settingsBtn = document.createElement('button');
+				settingsBtn.type = 'button';
+				settingsBtn.classList.add('void-welcome-footer-link');
+				settingsBtn.textContent = 'Spud settings';
+				settingsBtn.title = 'Model providers, tools, and preferences';
+				settingsBtn.addEventListener('click', () => {
+					void this.commandService.executeCommand(VOID_OPEN_SETTINGS_ACTION_ID);
+				});
+				linkRow.appendChild(consoleBtn);
+				linkRow.appendChild(sep);
+				linkRow.appendChild(settingsBtn);
+				voidIconBox.appendChild(linkRow);
 
 				// Recents
 				if (recentlyOpened.length !== 0) {

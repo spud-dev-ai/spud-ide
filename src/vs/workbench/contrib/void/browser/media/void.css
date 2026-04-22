@@ -40,38 +40,53 @@
 
 
 
-/* —— Spud empty-editor welcome (editorGroupWatermark) —— */
+/* —— Spud empty-editor welcome (editorGroupWatermark) — Paper + Earth, aligned with spud/website + theme-spud —— */
 .watermark-box.void-welcome-empty {
 	text-align: center;
 }
 
+.void-welcome-kicker {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--vscode-editor-foreground) 52%, transparent);
+	margin: 0 0 8px;
+}
+
 .void-welcome-block {
-	padding: 28px 28px 26px;
+	padding: 26px 28px 24px;
 	margin: 0 auto;
 	max-width: 100%;
-	border-radius: 16px;
-	background: color-mix(in srgb, var(--vscode-editor-background) 88%, var(--vscode-editorWatermark-foreground) 12%);
-	border: 1px solid color-mix(in srgb, var(--vscode-widget-border, var(--vscode-panel-border)) 55%, transparent);
+	border-radius: 10px; /* --radius-lg in design system */
+	/* Warm elevated card: white on paper, or subtle sidebar tone in dark */
+	background: var(
+		--vscode-editorWidget-background,
+		color-mix(in srgb, var(--vscode-sideBar-background) 55%, var(--vscode-editor-background) 45%)
+	);
+	border: 1px solid color-mix(in srgb, var(--vscode-editor-foreground) 9%, transparent);
 	box-shadow:
-		0 1px 0 color-mix(in srgb, var(--vscode-editorWatermark-foreground) 8%, transparent),
-		0 18px 48px color-mix(in srgb, var(--vscode-editor-foreground) 6%, transparent);
+		0 0 0 1px color-mix(in srgb, var(--vscode-editor-foreground) 4%, transparent),
+		0 12px 40px color-mix(in srgb, var(--vscode-editor-foreground) 7%, transparent),
+		0 2px 8px color-mix(in srgb, var(--vscode-editor-foreground) 4%, transparent);
 }
 
 .void-welcome-title {
-	font-size: clamp(1.35rem, 2.6vw, 1.75rem);
-	font-weight: 600;
-	letter-spacing: -0.03em;
-	line-height: 1.2;
+	font-family: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Palatino, "Georgia", ui-serif, serif;
+	font-size: clamp(1.75rem, 3.2vw, 2.15rem);
+	font-weight: 400;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
 	color: var(--vscode-editor-foreground);
-	margin: 0 0 10px;
+	margin: 0 0 12px;
 }
 
 .void-welcome-sub {
 	font-size: 13px;
-	line-height: 1.55;
-	max-width: 34ch;
+	line-height: 1.6;
+	max-width: 40ch;
 	margin: 0 auto;
-	color: color-mix(in srgb, var(--vscode-editor-foreground) 72%, transparent);
+	color: color-mix(in srgb, var(--vscode-editor-foreground) 64%, transparent);
 }
 
 .void-welcome-actions {
@@ -80,7 +95,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 10px;
-	margin-top: 22px;
+	margin-top: 20px;
 }
 
 .void-openfolder-button,
@@ -115,45 +130,84 @@
 	white-space: nowrap;
 }
 
-/* Primary — theme button when available, else Spud blue */
+/* Primary — Spud Paper: ink on white (see theme-spud button.background #1F1E17) */
 .void-openfolder-button {
-	background-color: var(--vscode-button-background, #306dce);
+	background-color: var(--vscode-button-background, #1f1e17);
 	color: var(--vscode-button-foreground, #ffffff);
-	border-color: color-mix(in srgb, var(--vscode-button-background, #306dce) 65%, #000000);
-	box-shadow: 0 1px 2px color-mix(in srgb, var(--vscode-editor-foreground) 12%, transparent);
+	border-color: color-mix(in srgb, var(--vscode-button-background, #1f1e17) 80%, #000000);
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--vscode-editor-foreground) 10%, transparent);
 }
 .void-openfolder-button:hover {
-	background-color: var(--vscode-button-hoverBackground, #2563eb);
-	filter: brightness(1.02);
+	background-color: var(--vscode-button-hoverBackground, #2b2a22);
 }
 .void-openfolder-button:active {
-	filter: brightness(0.97);
-}
-.void-openfolder-button:focus-visible {
-	box-shadow: 0 0 0 2px var(--vscode-editor-background), 0 0 0 4px var(--vscode-focusBorder, #4589ff);
-}
-
-/* Secondary — neutral / secondary button tokens */
-.void-openssh-button {
-	background-color: var(--vscode-button-secondaryBackground, #656565);
-	color: var(--vscode-button-secondaryForeground, #ffffff);
-	border-color: color-mix(in srgb, var(--vscode-editor-foreground) 18%, transparent);
-	box-shadow: 0 1px 2px color-mix(in srgb, var(--vscode-editor-foreground) 8%, transparent);
-}
-.void-openssh-button:hover {
-	background-color: var(--vscode-button-secondaryHoverBackground, #474747);
-}
-.void-openssh-button:active {
 	filter: brightness(0.96);
 }
+.void-openfolder-button:focus-visible {
+	box-shadow: 0 0 0 2px var(--vscode-editor-background), 0 0 0 4px var(--vscode-focusBorder, #007fd4);
+}
+
+/* Secondary — warm panel / secondary (Paper: #ECEAE3) */
+.void-openssh-button {
+	background-color: var(--vscode-button-secondaryBackground, #eceae3);
+	color: var(--vscode-button-secondaryForeground, #1f1e17);
+	border-color: color-mix(in srgb, var(--vscode-editor-foreground) 12%, transparent);
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--vscode-editor-foreground) 6%, transparent);
+}
+.void-openssh-button:hover {
+	background-color: var(--vscode-button-secondaryHoverBackground, #e3e1d9);
+}
+.void-openssh-button:active {
+	filter: brightness(0.98);
+}
 .void-openssh-button:focus-visible {
-	box-shadow: 0 0 0 2px var(--vscode-editor-background), 0 0 0 4px var(--vscode-focusBorder, #4589ff);
+	box-shadow: 0 0 0 2px var(--vscode-editor-background), 0 0 0 4px var(--vscode-focusBorder, #007fd4);
+}
+
+/* Tertiary — Console + Spud settings (text-link chrome, not filled buttons) */
+.void-welcome-footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 6px 10px;
+	margin-top: 18px;
+}
+.void-welcome-footer-sep {
+	color: color-mix(in srgb, var(--vscode-editor-foreground) 32%, transparent);
+	font-size: 12px;
+	user-select: none;
+}
+.void-welcome-footer-link {
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	font-size: 12.5px;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	color: var(--vscode-textLink-foreground, #007fd4);
+	background: none;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	text-decoration: underline;
+	text-decoration-color: color-mix(in srgb, var(--vscode-textLink-foreground, #007fd4) 40%, transparent);
+	text-underline-offset: 3px;
+	transition: color 0.12s ease, text-decoration-color 0.12s ease;
+}
+.void-welcome-footer-link:hover {
+	color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground, #007fd4));
+	text-decoration-color: currentColor;
+}
+.void-welcome-footer-link:focus-visible {
+	outline: 2px solid var(--vscode-focusBorder, #007fd4);
+	outline-offset: 2px;
 }
 
 .void-welcome-recent-block {
-	margin-top: 22px;
-	padding-top: 18px;
-	border-top: 1px solid color-mix(in srgb, var(--vscode-editorWatermark-foreground) 35%, transparent);
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid color-mix(in srgb, var(--vscode-editor-foreground) 9%, transparent);
 	text-align: left;
 }
 
@@ -177,17 +231,17 @@
 	display: flex;
 	align-items: baseline;
 	padding: 8px 10px;
-	border-radius: 8px;
-	color: var(--vscode-textLink-foreground, #3b82f6);
-	background: color-mix(in srgb, var(--vscode-textLink-foreground, #3b82f6) 6%, transparent);
-	border: 1px solid color-mix(in srgb, var(--vscode-textLink-foreground, #3b82f6) 12%, transparent);
+	border-radius: 6px;
+	color: var(--vscode-textLink-foreground, #007fd4);
+	background: color-mix(in srgb, var(--vscode-textLink-foreground, #007fd4) 5%, transparent);
+	border: 1px solid color-mix(in srgb, var(--vscode-textLink-foreground, #007fd4) 10%, transparent);
 	transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .void-welcome-recent-link.void-link:hover {
 	opacity: 1;
-	background: color-mix(in srgb, var(--vscode-textLink-foreground, #3b82f6) 12%, transparent);
-	border-color: color-mix(in srgb, var(--vscode-textLink-foreground, #3b82f6) 22%, transparent);
+	background: color-mix(in srgb, var(--vscode-textLink-foreground, #007fd4) 10%, transparent);
+	border-color: color-mix(in srgb, var(--vscode-textLink-foreground, #007fd4) 18%, transparent);
 }
 
 
@@ -213,7 +267,7 @@
 }
 
 .void-link {
-	color: #3b82f6;
+	color: var(--vscode-textLink-foreground, #007fd4);
 	cursor: pointer;
 	transition: all 0.2s ease;
 }
